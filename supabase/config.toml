@@ -1,0 +1,4 @@
+project_id = "lingoloop"
+
+[functions.analyze-speaking]
+verify_jwt = true

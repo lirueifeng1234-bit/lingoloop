@@ -1,0 +1,205 @@
+import { useMemo, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
+import { logSession } from '../lib/db'
+
+// Starter prompt set. Later these can be Gemini-generated and stored in
+// the speaking_prompts table, tuned to the learner's recurring errors.
+const PROMPTS = [
+  { scenario: 'Ordering at a café', text: 'You’re at a café. Order a drink and a snack, ask one question about the menu, and change your mind once.' },
+  { scenario: 'Small talk', text: 'A colleague asks how your weekend was. Answer in 3–4 sentences, then ask them back.' },
+  { scenario: 'Explaining your work', text: 'Explain what you do for a living to someone you just met — in plain English.' },
+  { scenario: 'Giving directions', text: 'Tell a tourist how to get from here to the nearest train station.' },
+  { scenario: 'Making a complaint', text: 'An online order arrived damaged. Politely explain the problem and say what you’d like done.' },
+]
+
+function pickPrompt() {
+  const day = Math.floor(Date.now() / 86400000)
+  return PROMPTS[day % PROMPTS.length]
+}
+
+function Feedback({ data, onExit }) {
+  const errors = data.errors || []
+  const vocab = data.vocab || []
+  return (
+    <div className="speak">
+      <div className="speak__bar">
+        <button className="review__back" onClick={onExit}>← Today</button>
+        <span className="review__progress mono">Feedback</span>
+      </div>
+
+      {data.overall && <p className="fb__overall">{data.overall}</p>}
+
+      {data.native_example && (
+        <div className="fb__block">
+          <h3 className="fb__h">A natural way to say it</h3>
+          <p className="fb__native">“{data.native_example}”</p>
+        </div>
+      )}
+
+      <div className="fb__block">
+        <h3 className="fb__h">Corrections <span className="mono">{errors.length}</span></h3>
+        {errors.length === 0 && <p className="fb__none">Nothing flagged — nicely done.</p>}
+        {errors.map((e, i) => (
+          <div className="corr" key={i}>
+            <span className="corr__type">{e.error_type}</span>
+            <p className="corr__line">
+              <span className="corr__old">{e.original}</span>
+              <span className="corr__arrow"> → </span>
+              <span className="corr__new">{e.correction}</span>
+            </p>
+            {e.note && <p className="corr__note">{e.note}</p>}
+          </div>
+        ))}
+      </div>
+
+      {vocab.length > 0 && (
+        <div className="fb__block">
+          <h3 className="fb__h">Saved to your vocab <span className="mono">{vocab.length}</span></h3>
+          {vocab.map((v, i) => (
+            <div className="vocab-add" key={i}><b>{v.word}</b> — {v.definition}</div>
+          ))}
+        </div>
+      )}
+
+      <button className="cta" onClick={onExit}>Back to today →</button>
+    </div>
+  )
+}
+
+export default function Speaking({ userId, onExit }) {
+  const prompt = useMemo(pickPrompt, [])
+  const sr = useSpeechRecognition('en-US')
+  const [start] = useState(() => Date.now())
+  const [phase, setPhase] = useState('record') // record | analyzing | result | error
+  const [result, setResult] = useState(null)
+  const [errMsg, setErrMsg] = useState('')
+
+  const text = sr.transcript
+
+  async function persist(data) {
+    try {
+      const errs = (data.errors || []).map((e) => ({
+        user_id: userId,
+        error_type: e.error_type,
+        original: e.original,
+        correction: e.correction,
+        note: e.note ?? null,
+        source_module: 'speaking',
+      }))
+      if (errs.length) await supabase.from('errors').insert(errs)
+
+      const words = (data.vocab || [])
+        .filter((v) => v.word)
+        .map((v) => ({
+          user_id: userId,
+          word: String(v.word).toLowerCase().trim(),
+          definition: v.definition ?? null,
+          example: v.example ?? null,
+          source: 'speaking',
+        }))
+      if (words.length) {
+        await supabase.from('vocabulary').upsert(words, {
+          onConflict: 'user_id,word',
+          ignoreDuplicates: true,
+        })
+      }
+
+      const secs = Math.round((Date.now() - start) / 1000)
+      await logSession('speaking', secs, userId)
+    } catch {
+      /* saving is best-effort; don't block the feedback view */
+    }
+  }
+
+  async function analyze() {
+    if (!text.trim()) return
+    if (sr.listening) sr.stop()
+    setPhase('analyzing')
+
+    const { data, error } = await supabase.functions.invoke('analyze-speaking', {
+      body: { prompt: prompt.text, transcript: text },
+    })
+
+    if (error || data?.error) {
+      setErrMsg(
+        data?.detail || data?.error
+          ? `Gemini said: ${data.detail || data.error}`
+          : 'The analysis function isn’t reachable yet. Once the Edge Function is deployed with your Gemini key, this will work.',
+      )
+      setPhase('error')
+      return
+    }
+
+    setResult(data)
+    setPhase('result')
+    persist(data)
+  }
+
+  if (phase === 'analyzing') {
+    return <div className="speak"><p className="review__state">Analyzing your English…</p></div>
+  }
+
+  if (phase === 'error') {
+    return (
+      <div className="speak">
+        <div className="speak__bar"><button className="review__back" onClick={onExit}>← Today</button></div>
+        <div className="review__done">
+          <h1>Couldn’t analyze yet</h1>
+          <p>{errMsg}</p>
+          <button className="cta" onClick={() => setPhase('record')}>Back to recording</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'result') return <Feedback data={result} onExit={onExit} />
+
+  // record phase
+  return (
+    <div className="speak">
+      <div className="speak__bar">
+        <button className="review__back" onClick={onExit}>← Today</button>
+        <span className="review__progress mono">Speaking</span>
+      </div>
+
+      <div className="prompt-card">
+        <span className="prompt-card__scenario">{prompt.scenario}</span>
+        <p className="prompt-card__text">{prompt.text}</p>
+      </div>
+
+      {!sr.supported && (
+        <p className="speak__hint">
+          This browser doesn’t support voice input — type your answer below instead
+          (Chrome on desktop works best).
+        </p>
+      )}
+
+      <div className="mic">
+        <button
+          className={`mic__btn${sr.listening ? ' is-live' : ''}`}
+          onClick={() => (sr.listening ? sr.stop() : sr.start())}
+          disabled={!sr.supported}
+        >
+          {sr.listening ? '■  Stop' : '●  Record'}
+        </button>
+        {sr.listening && <span className="mic__live">listening…</span>}
+      </div>
+
+      <textarea
+        className="speak__transcript"
+        placeholder="Your words appear here as you speak. Edit freely before analyzing."
+        value={sr.transcript}
+        onChange={(e) => sr.setTranscript(e.target.value)}
+      />
+      {sr.listening && sr.interim && <p className="speak__interim">{sr.interim}</p>}
+
+      <div className="speak__actions">
+        <button className="review__back" onClick={sr.reset}>Clear</button>
+        <button className="cta" onClick={analyze} disabled={!text.trim()}>
+          Analyze my English →
+        </button>
+      </div>
+    </div>
+  )
+}
