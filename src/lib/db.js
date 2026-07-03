@@ -67,6 +67,44 @@ export async function logSession(skillType, durationSec, userId) {
   if (error) throw error
 }
 
+// Which of today's tasks are already done (based on sessions logged today).
+export async function getTodayProgress() {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  const { data, error } = await supabase
+    .from('practice_sessions')
+    .select('skill_type')
+    .gte('created_at', start.toISOString())
+  if (error) throw error
+  const kinds = new Set((data ?? []).map((r) => r.skill_type))
+  return { speaking: kinds.has('speaking'), vocab: kinds.has('vocab') }
+}
+
+// This calendar week's activity (Mon–Sun): which days had any practice.
+export async function getWeekActivity() {
+  const now = new Date()
+  const monday = new Date(now)
+  const mondayOffset = (now.getDay() + 6) % 7 // Sun=0 -> 6, Mon=1 -> 0, ...
+  monday.setDate(now.getDate() - mondayOffset)
+  monday.setHours(0, 0, 0, 0)
+
+  const { data, error } = await supabase
+    .from('practice_sessions')
+    .select('created_at')
+    .gte('created_at', monday.toISOString())
+  if (error) throw error
+
+  const activeDays = new Set((data ?? []).map((r) => new Date(r.created_at).toDateString()))
+  const todayStr = now.toDateString()
+  const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  return labels.map((day, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    const key = d.toDateString()
+    return { day, done: activeDays.has(key), today: key === todayStr }
+  })
+}
+
 // Consecutive-day streak ending today (or yesterday, if today isn't done yet).
 export async function getStreak() {
   const { data, error } = await supabase

@@ -2,22 +2,8 @@ import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAudioRecorder } from '../hooks/useAudioRecorder'
 import { blobToWavBase64 } from '../lib/audio'
+import { pickPrompt } from '../lib/prompts'
 import { logSession } from '../lib/db'
-
-// Starter prompt set. Later these can be Gemini-generated and stored in
-// the speaking_prompts table, tuned to the learner's recurring errors.
-const PROMPTS = [
-  { scenario: 'Ordering at a café', text: 'You’re at a café. Order a drink and a snack, ask one question about the menu, and change your mind once.' },
-  { scenario: 'Small talk', text: 'A colleague asks how your weekend was. Answer in 3–4 sentences, then ask them back.' },
-  { scenario: 'Explaining your work', text: 'Explain what you do for a living to someone you just met — in plain English.' },
-  { scenario: 'Giving directions', text: 'Tell a tourist how to get from here to the nearest train station.' },
-  { scenario: 'Making a complaint', text: 'An online order arrived damaged. Politely explain the problem and say what you’d like done.' },
-]
-
-function pickPrompt() {
-  const day = Math.floor(Date.now() / 86400000)
-  return PROMPTS[day % PROMPTS.length]
-}
 
 function fmt(secs) {
   const m = Math.floor(secs / 60)
@@ -69,9 +55,13 @@ function Feedback({ data, onExit }) {
 
       {vocab.length > 0 && (
         <div className="fb__block">
-          <h3 className="fb__h">Saved to your vocab <span className="mono">{vocab.length}</span></h3>
+          <h3 className="fb__h">Words &amp; expressions to learn <span className="mono">{vocab.length}</span></h3>
+          <p className="fb__sub">Saved to your review deck — these come back when they’re due.</p>
           {vocab.map((v, i) => (
-            <div className="vocab-add" key={i}><b>{v.word}</b> — {v.definition}</div>
+            <div className="vocab-add" key={i}>
+              <p className="vocab-add__head"><b>{v.word}</b> — {v.definition}</p>
+              {v.example && <p className="vocab-add__ex">“{v.example}”</p>}
+            </div>
           ))}
         </div>
       )}

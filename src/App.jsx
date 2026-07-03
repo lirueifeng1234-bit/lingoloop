@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from './hooks/useSession'
 import { supabase } from './lib/supabase'
-import { ensureStarterDeck, getDueCount, getStreak } from './lib/db'
+import { ensureStarterDeck, getDueCount, getStreak, getTodayProgress, getWeekActivity } from './lib/db'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Review from './pages/Review.jsx'
@@ -10,7 +10,7 @@ import Speaking from './pages/Speaking.jsx'
 export default function App() {
   const session = useSession()
   const [view, setView] = useState('home') // 'home' | 'review'
-  const [stats, setStats] = useState({ dueCount: null, streak: null })
+  const [stats, setStats] = useState({ dueCount: null, streak: null, progress: null, week: null })
 
   const userId = session?.user?.id
 
@@ -18,8 +18,13 @@ export default function App() {
     if (!userId) return
     try {
       await ensureStarterDeck(userId)
-      const [dueCount, streak] = await Promise.all([getDueCount(), getStreak()])
-      setStats({ dueCount, streak })
+      const [dueCount, streak, progress, week] = await Promise.all([
+        getDueCount(),
+        getStreak(),
+        getTodayProgress(),
+        getWeekActivity(),
+      ])
+      setStats({ dueCount, streak, progress, week })
     } catch (e) {
       console.error('[LingoLoop] failed to load stats', e)
     }

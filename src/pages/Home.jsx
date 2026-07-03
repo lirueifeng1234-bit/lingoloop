@@ -1,24 +1,11 @@
 /*
- * Today's-tasks home
- * Streak + vocab due-count are live from Supabase (via props).
- * The speaking prompt is still sample content — that module lands next stage.
+ * Today's-tasks home — now fully live.
+ * Streak, due-count, per-task completion, and the week strip all come from
+ * Supabase (via props). The speaking prompt is the real rotating daily prompt,
+ * shared with the speaking page.
  * Signature element: TodayArc — a memory-retention curve with today's tasks on it.
  */
-
-// Sample content for the not-yet-built speaking module.
-const SPEAKING = {
-  title: 'Ordering at a café',
-  desc: 'Practise the past tense you slipped on yesterday. Order in 3–4 sentences.',
-  minutes: 8,
-}
-const VOCAB_MINUTES = 5
-
-// This-week strip is still illustrative until we chart real sessions.
-const WEEK = [
-  { day: 'M', done: true }, { day: 'T', done: true }, { day: 'W', done: true },
-  { day: 'T', done: true }, { day: 'F', done: false, today: true },
-  { day: 'S', done: false }, { day: 'S', done: false },
-]
+import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
 
 function greeting() {
   const h = new Date().getHours()
@@ -28,41 +15,60 @@ function greeting() {
   return 'Good evening'
 }
 
-function TodayArc({ due }) {
+function TodayArc({ due, speakingDone, vocabDone }) {
+  const bothDone = speakingDone && vocabDone
   return (
     <svg className="arc-svg" viewBox="0 0 760 200" role="img"
       aria-label="Today's path: Speak, Vocab review, Done">
       <path d="M 80 132 C 210 70 300 72 380 86" fill="none"
-        stroke="var(--persimmon)" strokeWidth="3" strokeLinecap="round" />
+        stroke="var(--persimmon)" strokeWidth="3" strokeLinecap="round"
+        opacity={speakingDone ? 1 : 0.5} />
       <path d="M 380 86 C 470 102 560 140 680 108" fill="none"
-        stroke="var(--teal)" strokeWidth="2" strokeLinecap="round"
-        strokeDasharray="2 8" opacity="0.55" />
+        stroke="var(--teal)" strokeWidth={vocabDone ? 3 : 2} strokeLinecap="round"
+        strokeDasharray={vocabDone ? '0' : '2 8'} opacity={vocabDone ? 1 : 0.55} />
 
       {/* Node 1 — Speak */}
-      <circle cx="80" cy="132" r="8" fill="var(--persimmon)" />
-      <circle cx="80" cy="132" r="13" fill="none" stroke="var(--persimmon)" strokeWidth="1.5" opacity="0.35" />
+      <circle cx="80" cy="132" r="8" fill={speakingDone ? 'var(--persimmon)' : 'var(--card)'}
+        stroke="var(--persimmon)" strokeWidth="2.5" />
       <text className="arc-node-label" x="80" y="168" textAnchor="middle">Speak</text>
-      <text className="arc-node-sub" x="80" y="184" textAnchor="middle">{SPEAKING.minutes} min</text>
+      <text className="arc-node-sub" x="80" y="184" textAnchor="middle">{speakingDone ? 'done ✓' : `${SPEAKING_MINUTES} min`}</text>
 
       {/* Node 2 — Vocab */}
-      <circle cx="380" cy="86" r="7" fill="var(--card)" stroke="var(--teal)" strokeWidth="2.5" />
+      <circle cx="380" cy="86" r="7" fill={vocabDone ? 'var(--teal)' : 'var(--card)'} stroke="var(--teal)" strokeWidth="2.5" />
       <text className="arc-node-label" x="380" y="58" textAnchor="middle">Vocab</text>
-      <text className="arc-node-sub" x="380" y="42" textAnchor="middle">{due} due</text>
+      <text className="arc-node-sub" x="380" y="42" textAnchor="middle">{vocabDone ? 'done ✓' : `${due} due`}</text>
 
       {/* Node 3 — Done */}
-      <circle cx="680" cy="108" r="7" fill="var(--card)" stroke="var(--gold)" strokeWidth="2.5" strokeDasharray="2 3" />
+      <circle cx="680" cy="108" r="7" fill="var(--card)" stroke="var(--gold)" strokeWidth="2.5" strokeDasharray={bothDone ? '0' : '2 3'} />
       <path d="M 680 100.5 l 1.9 3.9 4.3 0.6 -3.1 3 0.7 4.3 -3.8 -2 -3.8 2 0.7 -4.3 -3.1 -3 4.3 -0.6 z"
-        fill="var(--gold)" opacity="0.9" />
+        fill="var(--gold)" opacity={bothDone ? 0.95 : 0.25} />
       <text className="arc-node-label" x="680" y="144" textAnchor="middle">Done</text>
       <text className="arc-node-sub" x="680" y="160" textAnchor="middle">streak +1</text>
     </svg>
   )
 }
 
+const FALLBACK_WEEK = [
+  { day: 'M' }, { day: 'T' }, { day: 'W' }, { day: 'T' },
+  { day: 'F' }, { day: 'S' }, { day: 'S' },
+]
+
 export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab, onSignOut }) {
+  const prompt = pickPrompt()
   const streak = stats.streak ?? 0
   const due = stats.dueCount ?? 0
-  const totalMin = SPEAKING.minutes + VOCAB_MINUTES
+  const progress = stats.progress ?? { speaking: false, vocab: false }
+  const week = stats.week ?? FALLBACK_WEEK
+  const totalMin = SPEAKING_MINUTES + VOCAB_MINUTES
+
+  const speakingDone = !!progress.speaking
+  const vocabDone = !!progress.vocab
+  const doneCount = (speakingDone ? 1 : 0) + (vocabDone ? 1 : 0)
+
+  // Speaking has priority; then vocab. Decide the single next action.
+  let next = null
+  if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
+  else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
 
   return (
     <div className="shell">
@@ -81,26 +87,33 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
       <section className="hero">
         <div className="hero__eyebrow">{greeting()} · Today</div>
         <h1 className="hero__title">
-          <span className="accent">Speak</span> first — then lock it in.
+          {doneCount === 2
+            ? <>That’s a wrap for <span className="accent">today</span>.</>
+            : <><span className="accent">Speak</span> first — then lock it in.</>}
         </h1>
         <p className="hero__sub">
-          Your path for today is already set, so there's nothing to decide. Just follow
-          the curve — about {totalMin} minutes.
+          {doneCount === 2
+            ? 'Both tasks done — your streak is safe. Come back tomorrow for a fresh loop.'
+            : <>Your path for today is already set, so there’s nothing to decide. Just follow the curve — about {totalMin} minutes.</>}
         </p>
 
         <div className="arc-card">
           <div className="arc-card__head">
             <span className="arc-card__label">Today's loop</span>
-            <span className="arc-card__meta"><b>0 / 2</b> done</span>
+            <span className="arc-card__meta"><b>{doneCount} / 2</b> done</span>
           </div>
-          <TodayArc due={due} />
+          <TodayArc due={due} speakingDone={speakingDone} vocabDone={vocabDone} />
         </div>
 
-        <button className="cta" onClick={onStartSpeaking}>
-          Start today's session
-          <span className="cta__time mono">{totalMin} min</span>
-          <span className="cta__arrow" aria-hidden="true">→</span>
-        </button>
+        {next ? (
+          <button className="cta" onClick={next.fn}>
+            {next.label}
+            <span className="cta__time mono">{totalMin} min</span>
+            <span className="cta__arrow" aria-hidden="true">→</span>
+          </button>
+        ) : (
+          <div className="cta cta--done">✓ Today’s loop complete</div>
+        )}
       </section>
 
       <section className="tasks">
@@ -110,31 +123,33 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
         </div>
 
         <div className="task-grid">
-          {/* Speaking — not wired yet */}
-          <article className="task task--speaking">
+          {/* Speaking */}
+          <article className={`task task--speaking${speakingDone ? ' is-done' : ''}`}>
             <div className="task__top">
               <span className="task__badge">
                 <span className="task__icon" aria-hidden="true">🎙️</span>
                 Speaking
               </span>
-              <span className="task__count"><b>1</b> prompt</span>
+              <span className="task__count">{speakingDone ? '✓ done' : <><b>1</b> prompt</>}</span>
             </div>
-            <h3 className="task__title">{SPEAKING.title}</h3>
-            <p className="task__desc">{SPEAKING.desc}</p>
+            <h3 className="task__title">{prompt.scenario}</h3>
+            <p className="task__desc">{prompt.text}</p>
             <div className="task__foot">
-              <span className="task__time">~{SPEAKING.minutes} min</span>
-              <button className="task__go" onClick={onStartSpeaking}>Start →</button>
+              <span className="task__time">~{SPEAKING_MINUTES} min</span>
+              <button className="task__go" onClick={onStartSpeaking}>
+                {speakingDone ? 'Again →' : 'Start →'}
+              </button>
             </div>
           </article>
 
-          {/* Vocab — live */}
-          <article className="task task--vocab">
+          {/* Vocab */}
+          <article className={`task task--vocab${vocabDone ? ' is-done' : ''}`}>
             <div className="task__top">
               <span className="task__badge">
                 <span className="task__icon" aria-hidden="true">🗂️</span>
                 Review
               </span>
-              <span className="task__count"><b>{due}</b> due</span>
+              <span className="task__count">{vocabDone ? '✓ done' : <><b>{due}</b> due</>}</span>
             </div>
             <h3 className="task__title">Spaced review</h3>
             <p className="task__desc">
@@ -144,7 +159,7 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
             <div className="task__foot">
               <span className="task__time">~{VOCAB_MINUTES} min</span>
               <button className="task__go" onClick={onStartVocab}>
-                {due > 0 ? 'Start →' : 'Review →'}
+                {vocabDone ? 'Again →' : due > 0 ? 'Start →' : 'Review →'}
               </button>
             </div>
           </article>
@@ -153,7 +168,7 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
         <div className="week">
           <span className="week__label">This week</span>
           <div className="week__dots">
-            {WEEK.map((d, i) => (
+            {week.map((d, i) => (
               <div key={i} className={`dot${d.done ? ' dot--done' : ''}${d.today ? ' dot--today' : ''}`}>
                 <span className="dot__day">{d.day}</span>
                 <span className="dot__mark">{d.done && <span className="dot__check">✓</span>}</span>

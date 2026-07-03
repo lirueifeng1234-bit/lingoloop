@@ -180,6 +180,11 @@ button { font-family: inherit; cursor: pointer; }
 .cta__arrow { transition: transform 0.16s ease; }
 .cta:hover .cta__arrow { transform: translateX(3px); }
 .cta__time { font-family: var(--font-mono); font-size: 0.82rem; opacity: 0.85; font-weight: 500; }
+.cta--done {
+  background: var(--teal-soft); color: var(--teal); box-shadow: none; cursor: default;
+  border: 1px solid var(--teal);
+}
+.cta--done:hover { background: var(--teal-soft); transform: none; box-shadow: none; }
 
 /* ---------- 今日任務卡 ---------- */
 .tasks { margin-top: 46px; }
@@ -202,6 +207,8 @@ button { font-family: inherit; cursor: pointer; }
 .task:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
 .task--speaking { --accent: var(--persimmon); }
 .task--vocab { --accent: var(--teal); }
+.task.is-done { opacity: 0.72; }
+.task.is-done .task__count { color: var(--teal); }
 
 .task__top { display: flex; align-items: center; justify-content: space-between; }
 .task__badge {
@@ -455,8 +462,11 @@ button { font-family: inherit; cursor: pointer; }
 .corr__note { margin: 6px 0 0; color: var(--ink-soft); font-size: 0.92rem; line-height: 1.45; }
 
 .vocab-add {
-  padding: 10px 2px; border-bottom: 1px solid var(--line); line-height: 1.5;
+  padding: 12px 2px; border-bottom: 1px solid var(--line); line-height: 1.5;
 }
 .vocab-add:last-child { border-bottom: none; }
 .vocab-add b { font-family: var(--font-display); }
+.vocab-add__head { margin: 0; }
+.vocab-add__ex { margin: 4px 0 0; color: var(--ink-soft); font-style: italic; font-size: 0.95rem; }
+.fb__sub { margin: -4px 0 12px; color: var(--ink-faint); font-size: 0.9rem; }
 .speak .review__done, .speak .review__state { margin: auto 0; }
