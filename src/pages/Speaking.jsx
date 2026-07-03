@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
+import { useAudioRecorder } from '../hooks/useAudioRecorder'
+import { blobToWavBase64 } from '../lib/audio'
 import { logSession } from '../lib/db'
 
 // Starter prompt set. Later these can be Gemini-generated and stored in
@@ -18,6 +19,12 @@ function pickPrompt() {
   return PROMPTS[day % PROMPTS.length]
 }
 
+function fmt(secs) {
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 function Feedback({ data, onExit }) {
   const errors = data.errors || []
   const vocab = data.vocab || []
@@ -27,6 +34,13 @@ function Feedback({ data, onExit }) {
         <button className="review__back" onClick={onExit}>← Today</button>
         <span className="review__progress mono">Feedback</span>
       </div>
+
+      {data.transcript && (
+        <div className="fb__block">
+          <h3 className="fb__h">What we heard</h3>
+          <p className="fb__heard">“{data.transcript}”</p>
+        </div>
+      )}
 
       {data.overall && <p className="fb__overall">{data.overall}</p>}
 
@@ -69,13 +83,12 @@ function Feedback({ data, onExit }) {
 
 export default function Speaking({ userId, onExit }) {
   const prompt = useMemo(pickPrompt, [])
-  const sr = useSpeechRecognition('en-US')
+  const rec = useAudioRecorder()
   const [start] = useState(() => Date.now())
-  const [phase, setPhase] = useState('record') // record | analyzing | result | error
+  const [phase, setPhase] = useState('record') // record | recorded | analyzing | result | error
+  const [clip, setClip] = useState(null) // { blob, seconds }
   const [result, setResult] = useState(null)
   const [errMsg, setErrMsg] = useState('')
-
-  const text = sr.transcript
 
   async function persist(data) {
     try {
@@ -112,32 +125,51 @@ export default function Speaking({ userId, onExit }) {
     }
   }
 
-  async function analyze() {
-    if (!text.trim()) return
-    if (sr.listening) sr.stop()
-    setPhase('analyzing')
-
-    const { data, error } = await supabase.functions.invoke('analyze-speaking', {
-      body: { prompt: prompt.text, transcript: text },
-    })
-
-    if (error || data?.error) {
-      setErrMsg(
-        data?.detail || data?.error
-          ? `Gemini said: ${data.detail || data.error}`
-          : 'The analysis function isn’t reachable yet. Once the Edge Function is deployed with your Gemini key, this will work.',
-      )
-      setPhase('error')
-      return
+  async function handleStop() {
+    const seconds = rec.seconds
+    const blob = await rec.stop()
+    if (blob && blob.size > 0) {
+      setClip({ blob, seconds })
+      setPhase('recorded')
     }
+  }
 
-    setResult(data)
-    setPhase('result')
-    persist(data)
+  async function analyze() {
+    if (!clip) return
+    setPhase('analyzing')
+    try {
+      const audioBase64 = await blobToWavBase64(clip.blob)
+      const { data, error } = await supabase.functions.invoke('analyze-speaking', {
+        body: { prompt: prompt.text, audioBase64, mimeType: 'audio/wav' },
+      })
+
+      if (error || data?.error) {
+        setErrMsg(
+          data?.detail || data?.error
+            ? `Gemini said: ${data.detail || data.error}`
+            : 'The analysis service isn’t reachable right now. Please try again in a moment.',
+        )
+        setPhase('error')
+        return
+      }
+
+      setResult(data)
+      setPhase('result')
+      persist(data)
+    } catch (e) {
+      setErrMsg(`Couldn’t process the recording: ${e?.message || e}`)
+      setPhase('error')
+    }
+  }
+
+  function reRecord() {
+    setClip(null)
+    rec.reset()
+    setPhase('record')
   }
 
   if (phase === 'analyzing') {
-    return <div className="speak"><p className="review__state">Analyzing your English…</p></div>
+    return <div className="speak"><p className="review__state">Listening to your English…</p></div>
   }
 
   if (phase === 'error') {
@@ -145,9 +177,9 @@ export default function Speaking({ userId, onExit }) {
       <div className="speak">
         <div className="speak__bar"><button className="review__back" onClick={onExit}>← Today</button></div>
         <div className="review__done">
-          <h1>Couldn’t analyze yet</h1>
+          <h1>Couldn’t analyze that</h1>
           <p>{errMsg}</p>
-          <button className="cta" onClick={() => setPhase('record')}>Back to recording</button>
+          <button className="cta" onClick={reRecord}>Try again</button>
         </div>
       </div>
     )
@@ -155,7 +187,7 @@ export default function Speaking({ userId, onExit }) {
 
   if (phase === 'result') return <Feedback data={result} onExit={onExit} />
 
-  // record phase
+  // record / recorded phase
   return (
     <div className="speak">
       <div className="speak__bar">
@@ -168,35 +200,48 @@ export default function Speaking({ userId, onExit }) {
         <p className="prompt-card__text">{prompt.text}</p>
       </div>
 
-      {!sr.supported && (
+      {!rec.supported && (
         <p className="speak__hint">
-          This browser doesn’t support voice input — type your answer below instead
-          (Chrome on desktop works best).
+          This browser can’t record audio. Open the site over https in a modern
+          browser (Safari or Chrome) and allow the microphone.
         </p>
       )}
 
       <div className="mic">
-        <button
-          className={`mic__btn${sr.listening ? ' is-live' : ''}`}
-          onClick={() => (sr.listening ? sr.stop() : sr.start())}
-          disabled={!sr.supported}
-        >
-          {sr.listening ? '■  Stop' : '●  Record'}
-        </button>
-        {sr.listening && <span className="mic__live">listening…</span>}
+        {phase === 'recorded' ? (
+          <>
+            <span className="mic__done">✓ Recorded {fmt(clip.seconds)}</span>
+            <button className="mic__redo" onClick={reRecord}>Re-record</button>
+          </>
+        ) : (
+          <>
+            <button
+              className={`mic__btn${rec.recording ? ' is-live' : ''}`}
+              onClick={() => (rec.recording ? handleStop() : rec.start())}
+              disabled={!rec.supported}
+            >
+              {rec.recording ? '■  Stop' : '●  Record'}
+            </button>
+            {rec.recording && <span className="mic__live mono">{fmt(rec.seconds)} · recording</span>}
+          </>
+        )}
       </div>
 
-      <textarea
-        className="speak__transcript"
-        placeholder="Your words appear here as you speak. Edit freely before analyzing."
-        value={sr.transcript}
-        onChange={(e) => sr.setTranscript(e.target.value)}
-      />
-      {sr.listening && sr.interim && <p className="speak__interim">{sr.interim}</p>}
+      {rec.error && <p className="speak__hint">{rec.error}</p>}
+
+      {phase === 'record' && !rec.recording && (
+        <p className="speak__interim">
+          Speak your answer out loud — 3–4 sentences. Tap Record, talk, then Stop.
+        </p>
+      )}
 
       <div className="speak__actions">
-        <button className="review__back" onClick={sr.reset}>Clear</button>
-        <button className="cta" onClick={analyze} disabled={!text.trim()}>
+        <span />
+        <button
+          className="cta"
+          onClick={analyze}
+          disabled={phase !== 'recorded'}
+        >
           Analyze my English →
         </button>
       </div>

@@ -16,6 +16,7 @@ const corsHeaders = {
 const responseSchema = {
   type: 'object',
   properties: {
+    transcript: { type: 'string' },
     overall: { type: 'string' },
     errors: {
       type: 'array',
@@ -44,7 +45,7 @@ const responseSchema = {
       },
     },
   },
-  required: ['errors', 'native_example', 'vocab'],
+  required: ['transcript', 'errors', 'native_example', 'vocab'],
 }
 
 function json(obj: unknown, status = 200): Response {
@@ -61,26 +62,37 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     if (!apiKey) return json({ error: 'GEMINI_API_KEY not set on the server' }, 500)
 
-    const { prompt, transcript } = await req.json()
-    if (!transcript || !String(transcript).trim()) {
-      return json({ error: 'empty transcript' }, 400)
+    const { prompt, audioBase64, mimeType, transcript } = await req.json()
+    const hasAudio = audioBase64 && String(audioBase64).length > 0
+    const hasText = transcript && String(transcript).trim()
+    if (!hasAudio && !hasText) {
+      return json({ error: 'no audio or transcript provided' }, 400)
     }
 
     const instruction = [
       'You are a warm, precise English speaking coach.',
-      'A learner (intermediate; first language Chinese) was given a speaking prompt and answered out loud; their speech was transcribed.',
-      'Analyse ONLY their language — ignore transcription artefacts and punctuation.',
-      'Find real grammar and word-choice errors. For each: a short correction and a one-line note on why.',
+      'A learner (intermediate; first language Chinese) was given a speaking prompt and answered OUT LOUD.',
+      hasAudio
+        ? 'You are given the audio recording. First, transcribe exactly what they said into "transcript" (verbatim best-effort; drop filler like "um"/"uh").'
+        : 'Their speech was already transcribed; copy it into "transcript" as given.',
+      'Then analyse ONLY their language — grammar, word choice, and natural phrasing. Ignore pronunciation and background noise.',
+      'Find real errors. For each: the original phrase, a short correction, and a one-line note on why.',
       'Give one natural, native-sounding way to express what they meant (native_example).',
       'Suggest up to 4 genuinely useful vocabulary items worth learning from this (skip trivial words).',
       'Keep "overall" to one encouraging sentence.',
+      'If the audio is silent or unintelligible, return an empty transcript and empty errors, and say so kindly in "overall".',
       '',
       `PROMPT: ${prompt ?? '(none)'}`,
-      `LEARNER SAID: ${transcript}`,
+      hasAudio ? '' : `LEARNER SAID: ${transcript}`,
     ].join('\n')
 
+    const parts: unknown[] = [{ text: instruction }]
+    if (hasAudio) {
+      parts.push({ inlineData: { mimeType: mimeType || 'audio/wav', data: audioBase64 } })
+    }
+
     const body = {
-      contents: [{ parts: [{ text: instruction }] }],
+      contents: [{ parts }],
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema,
@@ -105,7 +117,7 @@ Deno.serve(async (req) => {
     try {
       analysis = JSON.parse(text)
     } catch {
-      analysis = { errors: [], native_example: '', vocab: [], raw: text }
+      analysis = { transcript: '', errors: [], native_example: '', vocab: [], raw: text }
     }
 
     return json(analysis, 200)
