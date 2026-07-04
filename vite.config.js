@@ -5,5 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
-  server: { port: 5173 },
+  // Respect an injected PORT (preview/CI) so we don't collide with other servers.
+  server: { port: Number(process.env.PORT) || 5173 },
 })

@@ -3,40 +3,40 @@
    概念：The Daily Loop。招牌元素是一條記憶保留曲線。
    ============================================================ */
 :root {
-  /* 色票 —— 柔霧尤加利綠底 / 松墨字 / 象牙卡片 */
-  --bg: #dce1ce;
-  --bg-deep: #d0d7bf;
-  --card: #fbf9f1;
-  --card-2: #f4f1e5;
-  --ink: #222e24;
-  --ink-soft: #4b5748;
-  --ink-faint: #7f8a72;
-  --line: rgba(34, 46, 36, 0.1);
-  --line-strong: rgba(34, 46, 36, 0.18);
+  /* 色票 —— Apple/Stripe 清透近白畫布 + 純白卡片 + 暖墨字 */
+  --bg: #f4f6f1;
+  --bg-deep: #ecefe7;
+  --card: #ffffff;
+  --card-2: #f6f8f3;
+  --ink: #1b241d;
+  --ink-soft: #566152;
+  --ink-faint: #8b968a;
+  --line: rgba(27, 36, 29, 0.08);
+  --line-strong: rgba(27, 36, 29, 0.14);
 
-  /* 重點色 */
-  --persimmon: #e0592f; /* 口說 / 主要行動 */
+  /* 重點色 —— LingoLoop 專屬,不換成 Stripe 靛藍 */
+  --persimmon: #e0592f; /* 口說 / 唯一實心 CTA */
   --persimmon-deep: #c14620;
-  --teal: #37726d;      /* 單字 / 記憶 */
-  --teal-soft: #d9e4df;
-  --gold: #cb972f;      /* 連續天數 */
+  --teal: #2f6f69;      /* 單字 / 記憶 */
+  --teal-soft: #e4efeb;
+  --gold: #c69324;      /* 連續天數 */
 
-  /* 字體 —— 全站 Times New Roman，用字級/字重/字距/大小寫做層級 */
-  --font-display: 'Times New Roman', Times, Georgia, serif;
-  --font-body: 'Times New Roman', Times, Georgia, serif;
-  --font-mono: 'Times New Roman', Times, Georgia, serif;
+  /* 字體 —— 雙字體:Fraunces 襯線當標題,Inter 當內文/數據 */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* 型階 */
-  --step-hero: clamp(2.1rem, 5.2vw, 3.4rem);
-  --step-h2: clamp(1.3rem, 2.6vw, 1.6rem);
+  --step-hero: clamp(2.3rem, 5.6vw, 3.7rem);
+  --step-h2: clamp(1.35rem, 2.6vw, 1.65rem);
   --step-body: 1rem;
-  --step-small: 0.82rem;
+  --step-small: 0.8rem;
 
-  /* 間距 / 圓角 / 陰影 */
-  --radius: 18px;
-  --radius-sm: 12px;
-  --shadow-card: 0 1px 2px rgba(34, 46, 36, 0.05), 0 14px 30px -18px rgba(34, 46, 36, 0.35);
-  --shadow-lift: 0 2px 4px rgba(34, 46, 36, 0.08), 0 22px 40px -20px rgba(34, 46, 36, 0.45);
+  /* 間距 / 圓角 / 陰影 —— 柔和瀰散、暖調 */
+  --radius: 20px;
+  --radius-sm: 13px;
+  --shadow-card: 0 1px 2px rgba(27, 36, 29, 0.04), 0 14px 32px -16px rgba(27, 36, 29, 0.16);
+  --shadow-lift: 0 2px 6px rgba(27, 36, 29, 0.06), 0 30px 52px -22px rgba(27, 36, 29, 0.24);
   --maxw: 940px;
 }
 
@@ -47,20 +47,31 @@ html, body { margin: 0; }
 body {
   font-family: var(--font-body);
   color: var(--ink);
+  font-size: 16px;
+  letter-spacing: -0.01em;
   background:
-    radial-gradient(120% 90% at 100% 0%, #e4e8d8 0%, rgba(228, 232, 216, 0) 55%),
+    radial-gradient(115% 70% at 100% -8%, #eaf1e6 0%, rgba(234, 241, 230, 0) 60%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   min-height: 100dvh;
 }
 
-h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.1; margin: 0; }
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  line-height: 1.08;
+  letter-spacing: -0.018em;
+  margin: 0;
+  font-optical-sizing: auto;
+}
 
 button { font-family: inherit; cursor: pointer; }
 
-.mono { font-family: var(--font-mono); font-feature-settings: 'tnum' 1; }
+/* Data / label type: Inter with tabular figures — the quiet "this is real data" signal */
+.mono { font-family: var(--font-mono); font-feature-settings: 'tnum' 1; font-variant-numeric: tabular-nums; }
 
 /* ---------- 版面容器 ---------- */
 .shell { max-width: var(--maxw); margin: 0 auto; padding: 22px clamp(18px, 4vw, 34px) 64px; }
@@ -567,3 +578,78 @@ button { font-family: inherit; cursor: pointer; }
   border-bottom: 1px solid var(--teal);
 }
 .progress-link:hover { color: var(--teal); opacity: 0.75; }
+
+/* ============================================================
+   Apple × Stripe polish layer
+   Stripe's atmospheric mesh + Apple's air & restraint, in
+   LingoLoop's own warm palette. Appended so it layers cleanly.
+   ============================================================ */
+
+/* — Signature: soft gradient mesh washing the top of the home screen — */
+.shell { position: relative; z-index: 0; }
+.shell::before {
+  content: '';
+  position: absolute;
+  top: -48px; left: 50%; transform: translateX(-50%);
+  width: min(1120px, 132%); height: 470px;
+  background:
+    radial-gradient(38% 60% at 17% 26%, rgba(224, 89, 47, 0.17), transparent 68%),
+    radial-gradient(40% 58% at 72% 12%, rgba(47, 111, 105, 0.16), transparent 70%),
+    radial-gradient(42% 60% at 93% 46%, rgba(198, 147, 36, 0.15), transparent 70%),
+    radial-gradient(56% 64% at 46% 0%, rgba(246, 232, 208, 0.5), transparent 72%);
+  filter: blur(26px) saturate(1.05);
+  opacity: 0.9;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* — Air: let the layout breathe (Apple) — */
+.hero { margin-top: 52px; }
+.arc-card { padding: 30px 30px 24px; }
+.tasks { margin-top: 56px; }
+
+/* — Typography fit for Fraunces (loaded 400–600) — */
+.brand__mark { font-weight: 600; letter-spacing: -0.02em; }
+.hero__eyebrow { letter-spacing: 0.16em; }
+.card__word { font-weight: 600; }
+.hero__title { letter-spacing: -0.022em; }
+
+/* — Cleaner cards: drop the heavy colored top-stripe for a hairline;
+     the accent now lives only in the icon/badge (Stripe restraint) — */
+.task { border-top: 1px solid var(--line); }
+.prompt-card { border-top: 1px solid var(--line); }
+.task__icon { border-radius: 12px; }
+
+/* — Buttons: keep the single persimmon pill, but lighter, cleaner lift — */
+.cta { padding: 15px 28px; box-shadow: 0 6px 18px -9px rgba(193, 70, 32, 0.5); }
+.cta:hover { box-shadow: 0 12px 26px -11px rgba(193, 70, 32, 0.55); }
+.mic__btn { box-shadow: 0 6px 18px -9px rgba(193, 70, 32, 0.5); }
+
+/* — Tabular figures on every real number (Stripe's data signal) — */
+.stat__num, .streak__num, .task__count b, .dash__streaks b, .arc-card__meta b {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* — Motion: one quiet entrance rise; disabled under reduced-motion below — */
+@keyframes ll-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero,
+.arc-card,
+.tasks,
+.prompt-card,
+.fb__block,
+.dash__intro,
+.dash__stats,
+.panel {
+  animation: ll-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.arc-card { animation-delay: 0.06s; }
+.tasks { animation-delay: 0.12s; }
+.dash__stats { animation-delay: 0.05s; }
+.panel { animation-delay: 0.1s; }
+
+/* Focus ring already persimmon; keep it crisp on the new light canvas */
+:focus-visible { outline-offset: 2px; }
