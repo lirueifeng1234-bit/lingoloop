@@ -53,7 +53,7 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onSignOut }) {
+export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onOpenProgress, onSignOut }) {
   const prompt = propPrompt ?? pickPrompt()
   const streak = stats.streak ?? 0
   const due = stats.dueCount ?? 0
@@ -177,6 +177,10 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             ))}
           </div>
         </div>
+
+        {onOpenProgress && (
+          <button className="progress-link" onClick={onOpenProgress}>See your full progress →</button>
+        )}
 
         <p className="note">Speaking, vocab &amp; streak are live · your errors and new words flow into review</p>
         {email && (

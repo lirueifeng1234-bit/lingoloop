@@ -6,6 +6,7 @@ import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Review from './pages/Review.jsx'
 import Speaking from './pages/Speaking.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 
 export default function App() {
   const session = useSession()
@@ -53,6 +54,9 @@ export default function App() {
   if (view === 'speaking') {
     return <Speaking userId={userId} prompt={prompt} onExit={() => { setView('home'); refresh() }} />
   }
+  if (view === 'dashboard') {
+    return <Dashboard onExit={() => { setView('home'); refresh() }} />
+  }
 
   return (
     <Home
@@ -61,6 +65,7 @@ export default function App() {
       email={session.user?.email}
       onStartSpeaking={() => setView('speaking')}
       onStartVocab={() => setView('review')}
+      onOpenProgress={() => setView('dashboard')}
       onSignOut={() => supabase.auth.signOut()}
     />
   )

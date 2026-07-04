@@ -220,3 +220,81 @@ export async function resolveTodayPrompt(userId) {
   // 3. Last resort so the UI always has a task.
   return pickPrompt()
 }
+
+// ── Progress dashboard ───────────────────────────────────────────────────
+// One bundle of everything the dashboard draws: error-category mix,
+// vocabulary growth, and practice consistency. All shaped client-side so the
+// page stays a dumb renderer.
+export async function getDashboard() {
+  const [errRes, vocRes, sesRes] = await Promise.all([
+    supabase.from('errors').select('error_type, created_at'),
+    supabase.from('vocabulary').select('created_at, state, source'),
+    supabase.from('practice_sessions').select('created_at'),
+  ])
+  if (errRes.error) throw errRes.error
+  if (vocRes.error) throw vocRes.error
+  if (sesRes.error) throw sesRes.error
+
+  const errors = errRes.data ?? []
+  const vocab = vocRes.data ?? []
+  const sessions = sesRes.data ?? []
+
+  // Error categories — where their gaps concentrate.
+  const catMap = {}
+  for (const e of errors) {
+    const k = (e.error_type || 'other').trim().toLowerCase()
+    catMap[k] = (catMap[k] || 0) + 1
+  }
+  const categories = Object.entries(catMap)
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count)
+
+  // Vocabulary — totals and a cumulative growth curve (one point per active day).
+  const totalWords = vocab.length
+  const masteredWords = vocab.filter((v) => (v.state ?? 0) >= 2).length
+  const fromSpeaking = vocab.filter((v) => v.source === 'speaking').length
+  const perDay = {}
+  for (const v of vocab) {
+    const key = new Date(v.created_at).toISOString().slice(0, 10)
+    perDay[key] = (perDay[key] || 0) + 1
+  }
+  let running = 0
+  const growth = Object.keys(perDay)
+    .sort()
+    .map((date) => ({ date, total: (running += perDay[date]) }))
+
+  // Consistency — streaks and a 14-day activity strip.
+  const daySet = new Set(sessions.map((s) => new Date(s.created_at).toDateString()))
+  let current = 0
+  const dc = new Date()
+  if (!daySet.has(dc.toDateString())) dc.setDate(dc.getDate() - 1)
+  while (daySet.has(dc.toDateString())) { current++; dc.setDate(dc.getDate() - 1) }
+
+  const sortedDays = [...daySet].map((s) => new Date(s)).sort((a, b) => a - b)
+  let longest = 0, run = 0, prev = null
+  for (const d of sortedDays) {
+    run = prev && (d - prev) <= 86400000 * 1.5 ? run + 1 : 1
+    if (run > longest) longest = run
+    prev = d
+  }
+
+  const recent = []
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    recent.push({ label: d.toDateString(), done: daySet.has(d.toDateString()) })
+  }
+
+  return {
+    categories,
+    totalWords,
+    masteredWords,
+    fromSpeaking,
+    growth,
+    current,
+    longest,
+    recent,
+    totalSessions: sessions.length,
+    totalCorrections: errors.length,
+  }
+}
