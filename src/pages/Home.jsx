@@ -53,8 +53,8 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab, onSignOut }) {
-  const prompt = pickPrompt()
+export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onSignOut }) {
+  const prompt = propPrompt ?? pickPrompt()
   const streak = stats.streak ?? 0
   const due = stats.dueCount ?? 0
   const progress = stats.progress ?? { speaking: false, vocab: false }
@@ -134,6 +134,7 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
             </div>
             <h3 className="task__title">{prompt.scenario}</h3>
             <p className="task__desc">{prompt.text}</p>
+            {prompt.focus && <p className="task__focus">Targets: {prompt.focus}</p>}
             <div className="task__foot">
               <span className="task__time">~{SPEAKING_MINUTES} min</span>
               <button className="task__go" onClick={onStartSpeaking}>

@@ -1,7 +1,13 @@
 import { supabase } from './supabase'
 import { schedule } from './fsrs'
+import { pickPrompt } from './prompts'
 
 const nowISO = () => new Date().toISOString()
+const midnightISO = () => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
+}
 
 // A small starter deck so the review loop has something to chew on day one.
 // Tuned loosely for a medical / investment reader. Delete freely later.
@@ -127,4 +133,90 @@ export async function getStreak() {
     d.setDate(d.getDate() - 1)
   }
   return streak
+}
+
+// ── Dynamic speaking prompts ─────────────────────────────────────────────
+// The day's prompt is generated from the learner's recent mistakes, then
+// cached so it's stable within the day and costs at most one Gemini call/day.
+
+// Recent mistakes to target — newest first.
+export async function getRecentErrors(limit = 12) {
+  const { data, error } = await supabase
+    .from('errors')
+    .select('error_type, original, correction, note')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+// Scenarios we've already used — fed to the generator as a do-not-repeat list.
+export async function getRecentScenarios(limit = 20) {
+  const { data, error } = await supabase
+    .from('speaking_prompts')
+    .select('scenario, prompt_text')
+    .not('user_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map((r) => `${r.scenario}: ${r.prompt_text}`)
+}
+
+// Today's already-generated prompt, if there is one (keeps it stable on reload).
+// Note: the `focus` line lives only in-memory for the freshly generated prompt;
+// it isn't stored, so a reload shows the same task without the "Targets" hint.
+export async function getTodayPrompt() {
+  const { data, error } = await supabase
+    .from('speaking_prompts')
+    .select('scenario, prompt_text')
+    .not('user_id', 'is', null)
+    .gte('created_at', midnightISO())
+    .order('created_at', { ascending: false })
+    .limit(1)
+  if (error) throw error
+  const row = data?.[0]
+  return row ? { scenario: row.scenario, text: row.prompt_text, focus: null } : null
+}
+
+async function saveTodayPrompt(userId, { scenario, text, difficulty }) {
+  const { error } = await supabase.from('speaking_prompts').insert({
+    user_id: userId,
+    scenario,
+    prompt_text: text,
+    difficulty: difficulty ?? 3,
+  })
+  if (error) throw error
+}
+
+// Resolve the prompt to show today: cached → generated-from-errors → static.
+export async function resolveTodayPrompt(userId) {
+  // 1. Same prompt for the rest of the day if we already made one.
+  try {
+    const cached = await getTodayPrompt()
+    if (cached) return cached
+  } catch { /* fall through to generation */ }
+
+  // 2. Generate one tuned to recent mistakes, avoiding past scenarios.
+  try {
+    const [errors, recentScenarios] = await Promise.all([
+      getRecentErrors(12),
+      getRecentScenarios(20),
+    ])
+    const { data, error } = await supabase.functions.invoke('generate-prompt', {
+      body: { errors, recentScenarios },
+    })
+    if (!error && data && data.prompt_text) {
+      const prompt = {
+        scenario: data.scenario,
+        text: data.prompt_text,
+        focus: data.focus ?? null,
+      }
+      // Best-effort cache; don't block on it.
+      saveTodayPrompt(userId, { ...prompt, difficulty: data.difficulty }).catch(() => {})
+      return prompt
+    }
+  } catch { /* fall through to static */ }
+
+  // 3. Last resort so the UI always has a task.
+  return pickPrompt()
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from './hooks/useSession'
 import { supabase } from './lib/supabase'
-import { ensureStarterDeck, getDueCount, getStreak, getTodayProgress, getWeekActivity } from './lib/db'
+import { ensureStarterDeck, getDueCount, getStreak, getTodayProgress, getWeekActivity, resolveTodayPrompt } from './lib/db'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Review from './pages/Review.jsx'
@@ -11,6 +11,7 @@ export default function App() {
   const session = useSession()
   const [view, setView] = useState('home') // 'home' | 'review'
   const [stats, setStats] = useState({ dueCount: null, streak: null, progress: null, week: null })
+  const [prompt, setPrompt] = useState(null) // today's speaking prompt (dynamic)
 
   const userId = session?.user?.id
 
@@ -32,6 +33,17 @@ export default function App() {
 
   useEffect(() => { refresh() }, [refresh])
 
+  // Resolve today's prompt once (cached in DB for the day), separate from stats
+  // so a slow Gemini call never holds up the rest of the home screen.
+  useEffect(() => {
+    if (!userId) return
+    let alive = true
+    resolveTodayPrompt(userId)
+      .then((p) => { if (alive) setPrompt(p) })
+      .catch((e) => console.error('[LingoLoop] failed to load prompt', e))
+    return () => { alive = false }
+  }, [userId])
+
   if (session === undefined) return <div className="boot">Loading…</div>
   if (session === null) return <Login />
 
@@ -39,12 +51,13 @@ export default function App() {
     return <Review userId={userId} onExit={() => { setView('home'); refresh() }} />
   }
   if (view === 'speaking') {
-    return <Speaking userId={userId} onExit={() => { setView('home'); refresh() }} />
+    return <Speaking userId={userId} prompt={prompt} onExit={() => { setView('home'); refresh() }} />
   }
 
   return (
     <Home
       stats={stats}
+      prompt={prompt}
       email={session.user?.email}
       onStartSpeaking={() => setView('speaking')}
       onStartVocab={() => setView('review')}

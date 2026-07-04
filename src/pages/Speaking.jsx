@@ -71,8 +71,9 @@ function Feedback({ data, onExit }) {
   )
 }
 
-export default function Speaking({ userId, onExit }) {
-  const prompt = useMemo(pickPrompt, [])
+export default function Speaking({ userId, prompt: propPrompt, onExit }) {
+  const fallback = useMemo(pickPrompt, [])
+  const prompt = propPrompt ?? fallback
   const rec = useAudioRecorder()
   const [start] = useState(() => Date.now())
   const [phase, setPhase] = useState('record') // record | recorded | analyzing | result | error
@@ -188,6 +189,7 @@ export default function Speaking({ userId, onExit }) {
       <div className="prompt-card">
         <span className="prompt-card__scenario">{prompt.scenario}</span>
         <p className="prompt-card__text">{prompt.text}</p>
+        {prompt.focus && <p className="prompt-card__focus">Targets: {prompt.focus}</p>}
       </div>
 
       {!rec.supported && (

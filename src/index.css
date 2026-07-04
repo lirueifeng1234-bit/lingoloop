@@ -227,6 +227,12 @@ button { font-family: inherit; cursor: pointer; }
 
 .task__title { font-family: var(--font-display); font-size: 1.28rem; font-weight: 600; }
 .task__desc { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; margin: 0; }
+.task__focus {
+  margin: 10px 0 0; align-self: flex-start;
+  font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em;
+  color: var(--teal); background: var(--teal-soft);
+  padding: 4px 9px; border-radius: 6px; line-height: 1.35;
+}
 
 .task__foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
 .task__time { font-family: var(--font-mono); font-size: var(--step-small); color: var(--ink-faint); }
@@ -389,6 +395,12 @@ button { font-family: inherit; cursor: pointer; }
   text-transform: uppercase; color: var(--persimmon);
 }
 .prompt-card__text { margin: 12px 0 0; font-size: 1.32rem; font-family: var(--font-display); line-height: 1.35; }
+.prompt-card__focus {
+  margin: 14px 0 0; display: inline-block;
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.02em;
+  color: var(--teal); background: var(--teal-soft);
+  padding: 5px 10px; border-radius: 6px;
+}
 
 .mic { margin-top: 26px; display: flex; align-items: center; gap: 14px; }
 .mic__btn {
