@@ -639,3 +639,107 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Focus ring already persimmon; keep it crisp on the new light canvas */
 :focus-visible { outline-offset: 2px; }
+
+/* ============================================================
+   Reading module — read & collect
+   ============================================================ */
+.task--reading { --accent: var(--gold); }
+
+.reading {
+  max-width: 660px; margin: 0 auto; min-height: 100dvh;
+  padding: 26px clamp(18px, 4vw, 30px) 64px;
+  display: flex; flex-direction: column;
+}
+.reading .review__state { margin: auto 0; text-align: center; color: var(--ink-faint); }
+.reading.has-sheet { padding-bottom: 300px; }
+
+.read { margin-top: 14px; }
+.read__eyebrow {
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--gold);
+}
+.read__title {
+  font-size: clamp(1.9rem, 4.6vw, 2.6rem); letter-spacing: -0.015em;
+  margin-top: 12px; text-wrap: balance; line-height: 1.12;
+}
+.read__hint {
+  margin: 14px 0 0; color: var(--ink-faint); font-style: italic; font-size: 0.95rem;
+}
+
+.read__body {
+  margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line);
+}
+.read__p {
+  margin: 0 0 1.15em; font-family: var(--font-body);
+  font-size: 1.16rem; line-height: 1.72; color: var(--ink);
+}
+.read__p:last-child { margin-bottom: 0; }
+
+/* Tappable word — quiet until touched (Kindle-style look-up affordance) */
+.rw {
+  display: inline; border: none; background: transparent; padding: 0; margin: 0;
+  font: inherit; color: inherit; cursor: pointer;
+  border-radius: 3px; transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+.rw:hover { background: color-mix(in srgb, var(--gold) 15%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 15%, transparent); }
+.rw.is-active {
+  background: color-mix(in srgb, var(--gold) 26%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 26%, transparent);
+  color: var(--ink);
+}
+
+.read__foot {
+  margin-top: 30px; display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.read__more {
+  background: none; border: 1px solid var(--line-strong); color: var(--ink-soft);
+  border-radius: 999px; padding: 9px 16px; font-family: var(--font-body);
+  font-size: 0.9rem; transition: border-color 0.14s ease, color 0.14s ease;
+}
+.read__more:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.read__more:disabled { opacity: 0.55; cursor: default; }
+.read__saved { font-size: 0.8rem; color: var(--ink-faint); letter-spacing: 0.03em; }
+.reading .cta { margin-top: 24px; align-self: flex-start; }
+
+/* Bottom sheet — the tapped word's definition + save */
+.wsheet {
+  position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: min(660px, 100%); z-index: 40;
+  background: var(--card); border: 1px solid var(--line);
+  border-bottom: none; border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow-lift);
+  padding: 20px clamp(18px, 4vw, 26px) calc(22px + env(safe-area-inset-bottom, 0px));
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes sheet-up { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+.wsheet__close {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; font-size: 1.5rem; line-height: 1;
+  color: var(--ink-faint); padding: 4px 8px;
+}
+.wsheet__close:hover { color: var(--ink); }
+.wsheet__head { display: flex; align-items: baseline; gap: 12px; padding-right: 34px; }
+.wsheet__word { font-family: var(--font-display); font-size: 1.55rem; font-weight: 700; }
+.wsheet__pos {
+  font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--gold);
+}
+.wsheet__state { margin: 14px 0 4px; color: var(--ink-faint); font-family: var(--font-mono); font-size: 0.9rem; }
+.wsheet__def { margin: 12px 0 0; font-size: 1.1rem; line-height: 1.5; color: var(--ink); }
+.wsheet__ex { margin: 8px 0 0; color: var(--ink-soft); font-style: italic; line-height: 1.5; }
+.wsheet__save {
+  margin-top: 16px; display: inline-flex; align-items: center; gap: 8px;
+  background: var(--gold); color: #fffaf0; border: none; border-radius: 999px;
+  padding: 11px 20px; font-size: 0.96rem; font-weight: 600;
+  box-shadow: 0 6px 18px -9px rgba(169, 130, 47, 0.5);
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+.wsheet__save:hover { transform: translateY(-2px); filter: brightness(1.04); }
+.wsheet__saved {
+  margin-top: 16px; display: inline-block;
+  font-family: var(--font-mono); font-size: 0.9rem; color: var(--teal);
+}
+
+/* Reading gets its own quiet entrance too */
+.read { animation: ll-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }

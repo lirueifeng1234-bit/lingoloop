@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { schedule } from './fsrs'
 import { pickPrompt } from './prompts'
+import { pickPassage } from './reading'
 
 const nowISO = () => new Date().toISOString()
 const midnightISO = () => {
@@ -83,7 +84,7 @@ export async function getTodayProgress() {
     .gte('created_at', start.toISOString())
   if (error) throw error
   const kinds = new Set((data ?? []).map((r) => r.skill_type))
-  return { speaking: kinds.has('speaking'), vocab: kinds.has('vocab') }
+  return { speaking: kinds.has('speaking'), vocab: kinds.has('vocab'), reading: kinds.has('reading') }
 }
 
 // This calendar week's activity (Mon–Sun): which days had any practice.
@@ -297,4 +298,79 @@ export async function getDashboard() {
     totalSessions: sessions.length,
     totalCorrections: errors.length,
   }
+}
+
+// ── Reading module ───────────────────────────────────────────────────────
+// A fresh C1–C2 passage is Gemini-generated, then cached in localStorage for
+// the day so a reload (and the free tier) isn't hit repeatedly. Tapped words
+// resolve from the passage glossary first, then a live in-context lookup.
+
+const READ_CACHE_KEY = 'll_reading_current'
+const READ_TOPICS_KEY = 'll_reading_topics'
+
+const localDay = () => {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+function readCache() {
+  try { return JSON.parse(localStorage.getItem(READ_CACHE_KEY) || 'null') } catch { return null }
+}
+function writeCache(article) {
+  try { localStorage.setItem(READ_CACHE_KEY, JSON.stringify({ date: localDay(), article })) } catch { /* ignore */ }
+}
+function recentTopics() {
+  try { return JSON.parse(localStorage.getItem(READ_TOPICS_KEY) || '[]') } catch { return [] }
+}
+function rememberTopic(topic) {
+  if (!topic) return
+  try {
+    const next = [topic, ...recentTopics().filter((t) => t !== topic)].slice(0, 12)
+    localStorage.setItem(READ_TOPICS_KEY, JSON.stringify(next))
+  } catch { /* ignore */ }
+}
+
+// Resolve today's passage: cached → freshly generated → static fallback.
+// Pass { force: true } to skip the cache and generate a brand-new one.
+export async function resolveTodayReading({ force = false } = {}) {
+  if (!force) {
+    const cached = readCache()
+    if (cached && cached.date === localDay() && cached.article) return cached.article
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-reading', {
+      body: { recentTopics: recentTopics() },
+    })
+    if (!error && data && data.body) {
+      writeCache(data)
+      rememberTopic(data.topic)
+      return data
+    }
+  } catch { /* fall through to static */ }
+
+  return pickPassage()
+}
+
+// In-context lookup for a tapped word. Throws on failure so the UI can react.
+export async function lookupWord(word, context) {
+  const { data, error } = await supabase.functions.invoke('lookup-word', {
+    body: { word, context },
+  })
+  if (error) throw error
+  if (!data || data.error || !data.definition) throw new Error(data?.error || 'lookup failed')
+  return data
+}
+
+// Save one word to the review deck (deduped on user_id,word). Returns true on success.
+export async function saveVocabWord(userId, { word, definition, example }) {
+  const clean = String(word || '').toLowerCase().trim()
+  if (!clean) return false
+  const { error } = await supabase.from('vocabulary').upsert(
+    [{ user_id: userId, word: clean, definition: definition ?? null, example: example ?? null, source: 'reading' }],
+    { onConflict: 'user_id,word', ignoreDuplicates: true },
+  )
+  if (error) throw error
+  return true
 }

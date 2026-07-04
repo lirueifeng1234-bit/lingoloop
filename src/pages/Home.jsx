@@ -6,6 +6,7 @@
  * Signature element: TodayArc — a memory-retention curve with today's tasks on it.
  */
 import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
+import { READING_MINUTES } from '../lib/reading'
 
 function greeting() {
   const h = new Date().getHours()
@@ -53,16 +54,17 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onOpenProgress, onSignOut }) {
+export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onOpenProgress, onSignOut }) {
   const prompt = propPrompt ?? pickPrompt()
   const streak = stats.streak ?? 0
   const due = stats.dueCount ?? 0
-  const progress = stats.progress ?? { speaking: false, vocab: false }
+  const progress = stats.progress ?? { speaking: false, vocab: false, reading: false }
   const week = stats.week ?? FALLBACK_WEEK
   const totalMin = SPEAKING_MINUTES + VOCAB_MINUTES
 
   const speakingDone = !!progress.speaking
   const vocabDone = !!progress.vocab
+  const readingDone = !!progress.reading
   const doneCount = (speakingDone ? 1 : 0) + (vocabDone ? 1 : 0)
 
   // Speaking has priority; then vocab. Decide the single next action.
@@ -164,6 +166,30 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               </button>
             </div>
           </article>
+
+          {/* Reading */}
+          {onStartReading && (
+            <article className={`task task--reading${readingDone ? ' is-done' : ''}`}>
+              <div className="task__top">
+                <span className="task__badge">
+                  <span className="task__icon" aria-hidden="true">📖</span>
+                  Reading
+                </span>
+                <span className="task__count">{readingDone ? '✓ done' : <><b>1</b> passage</>}</span>
+              </div>
+              <h3 className="task__title">Read &amp; collect</h3>
+              <p className="task__desc">
+                A fresh C1–C2 article. Tap any word for an instant definition and send
+                the keepers straight to your review deck.
+              </p>
+              <div className="task__foot">
+                <span className="task__time">~{READING_MINUTES} min</span>
+                <button className="task__go" onClick={onStartReading}>
+                  {readingDone ? 'Again →' : 'Read →'}
+                </button>
+              </div>
+            </article>
+          )}
         </div>
 
         <div className="week">
