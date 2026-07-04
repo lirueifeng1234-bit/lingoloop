@@ -38,8 +38,8 @@ function Feedback({ data, onExit }) {
       )}
 
       <div className="fb__block">
-        <h3 className="fb__h">Corrections <span className="mono">{errors.length}</span></h3>
-        {errors.length === 0 && <p className="fb__none">Nothing flagged — nicely done.</p>}
+        <h3 className="fb__h">Corrections &amp; refinements <span className="mono">{errors.length}</span></h3>
+        {errors.length === 0 && <p className="fb__none">Clean and natural — nothing worth changing this time.</p>}
         {errors.map((e, i) => (
           <div className="corr" key={i}>
             <span className="corr__type">{e.error_type}</span>
