@@ -3,28 +3,29 @@
    概念：The Daily Loop。招牌元素是一條記憶保留曲線。
    ============================================================ */
 :root {
-  /* 色票 —— Apple/Stripe 清透近白畫布 + 純白卡片 + 暖墨字 */
-  --bg: #f4f6f1;
-  --bg-deep: #ecefe7;
-  --card: #ffffff;
-  --card-2: #f6f8f3;
-  --ink: #1b241d;
-  --ink-soft: #566152;
-  --ink-faint: #8b968a;
-  --line: rgba(27, 36, 29, 0.08);
-  --line-strong: rgba(27, 36, 29, 0.14);
+  /* 色票 —— 暖象牙紙感底 + 暖白卡片 + 深墨字(精品文學路線) */
+  --bg: #f3f1ea;
+  --bg-deep: #ebe8dd;
+  --card: #fffdf8;
+  --card-2: #f5f2ea;
+  --ink: #22261f;
+  --ink-soft: #575c4e;
+  --ink-faint: #8d9082;
+  --line: rgba(34, 38, 31, 0.09);
+  --line-strong: rgba(34, 38, 31, 0.15);
 
-  /* 重點色 —— LingoLoop 專屬,不換成 Stripe 靛藍 */
-  --persimmon: #e0592f; /* 口說 / 唯一實心 CTA */
-  --persimmon-deep: #c14620;
-  --teal: #2f6f69;      /* 單字 / 記憶 */
-  --teal-soft: #e4efeb;
-  --gold: #c69324;      /* 連續天數 */
+  /* 重點色 —— 低彩度、深、克制(高級感)。變數沿用舊名,值已改。
+     --persimmon 現在是「深松綠」= 口說/唯一實心 CTA(不再是廣告橘) */
+  --persimmon: #2f5a49; /* 深松綠 / 口說 / 唯一實心 CTA */
+  --persimmon-deep: #244638;
+  --teal: #356b73;      /* 沉靜藍綠 / 單字 / 記憶 */
+  --teal-soft: #e3edee;
+  --gold: #a9822f;      /* 古典金 / 連續天數 */
 
-  /* 字體 —— 雙字體:Fraunces 襯線當標題,Inter 當內文/數據 */
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* 字體 —— 全站 Times New Roman(招牌),用字級/字重/字距做層級 */
+  --font-display: 'Times New Roman', Times, Georgia, serif;
+  --font-body: 'Times New Roman', Times, Georgia, serif;
+  --font-mono: 'Times New Roman', Times, Georgia, serif;
 
   /* 型階 */
   --step-hero: clamp(2.3rem, 5.6vw, 3.7rem);
@@ -47,10 +48,8 @@ html, body { margin: 0; }
 body {
   font-family: var(--font-body);
   color: var(--ink);
-  font-size: 16px;
-  letter-spacing: -0.01em;
   background:
-    radial-gradient(115% 70% at 100% -8%, #eaf1e6 0%, rgba(234, 241, 230, 0) 60%),
+    radial-gradient(115% 70% at 100% -8%, #eef0e5 0%, rgba(238, 240, 229, 0) 60%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
@@ -59,18 +58,11 @@ body {
   min-height: 100dvh;
 }
 
-h1, h2, h3 {
-  font-family: var(--font-display);
-  font-weight: 560;
-  line-height: 1.08;
-  letter-spacing: -0.018em;
-  margin: 0;
-  font-optical-sizing: auto;
-}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.1; margin: 0; }
 
 button { font-family: inherit; cursor: pointer; }
 
-/* Data / label type: Inter with tabular figures — the quiet "this is real data" signal */
+/* Label / data type: Times with tabular figures for tidy number columns */
 .mono { font-family: var(--font-mono); font-feature-settings: 'tnum' 1; font-variant-numeric: tabular-nums; }
 
 /* ---------- 版面容器 ---------- */
@@ -182,10 +174,10 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 1.02rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  box-shadow: 0 10px 22px -10px rgba(193, 70, 32, 0.85);
+  box-shadow: 0 6px 18px -9px rgba(36, 70, 56, 0.45);
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
-.cta:hover { background: var(--persimmon-deep); transform: translateY(-2px); box-shadow: 0 16px 28px -12px rgba(193, 70, 32, 0.9); }
+.cta:hover { background: var(--persimmon-deep); transform: translateY(-2px); box-shadow: 0 12px 26px -11px rgba(36, 70, 56, 0.5); }
 .cta:active { transform: translateY(0); }
 .cta:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; transform: none; background: var(--persimmon); }
 .cta__arrow { transition: transform 0.16s ease; }
@@ -418,13 +410,13 @@ button { font-family: inherit; cursor: pointer; }
   border: none; border-radius: 999px; padding: 15px 30px;
   font-size: 1.02rem; font-weight: 600; letter-spacing: 0.02em;
   background: var(--persimmon); color: #fff5ef;
-  box-shadow: 0 10px 22px -10px rgba(193, 70, 32, 0.85);
+  box-shadow: 0 6px 18px -9px rgba(36, 70, 56, 0.45);
   transition: transform 0.14s ease, background 0.14s ease;
 }
 .mic__btn:hover:not(:disabled) { transform: translateY(-2px); }
 .mic__btn:disabled { background: var(--ink-faint); box-shadow: none; opacity: 0.6; cursor: not-allowed; }
 .mic__btn.is-live { background: var(--persimmon-deep); animation: micpulse 1.4s ease-in-out infinite; }
-@keyframes micpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 89, 47, 0.5); } 50% { box-shadow: 0 0 0 12px rgba(224, 89, 47, 0); } }
+@keyframes micpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(47, 90, 73, 0.45); } 50% { box-shadow: 0 0 0 12px rgba(47, 90, 73, 0); } }
 .mic__live { font-family: var(--font-mono); font-size: 0.85rem; color: var(--persimmon); }
 .mic__done { font-family: var(--font-mono); font-size: 0.9rem; color: var(--teal); }
 .mic__redo {
@@ -593,37 +585,31 @@ button { font-family: inherit; cursor: pointer; }
   top: -48px; left: 50%; transform: translateX(-50%);
   width: min(1120px, 132%); height: 470px;
   background:
-    radial-gradient(38% 60% at 17% 26%, rgba(224, 89, 47, 0.17), transparent 68%),
-    radial-gradient(40% 58% at 72% 12%, rgba(47, 111, 105, 0.16), transparent 70%),
-    radial-gradient(42% 60% at 93% 46%, rgba(198, 147, 36, 0.15), transparent 70%),
-    radial-gradient(56% 64% at 46% 0%, rgba(246, 232, 208, 0.5), transparent 72%);
-  filter: blur(26px) saturate(1.05);
-  opacity: 0.9;
+    radial-gradient(38% 60% at 17% 26%, rgba(47, 90, 73, 0.15), transparent 68%),
+    radial-gradient(40% 58% at 72% 12%, rgba(53, 107, 115, 0.13), transparent 70%),
+    radial-gradient(42% 60% at 93% 46%, rgba(169, 130, 47, 0.13), transparent 70%),
+    radial-gradient(56% 64% at 46% 0%, rgba(240, 234, 214, 0.5), transparent 72%);
+  filter: blur(28px) saturate(1.02);
+  opacity: 0.8;
   z-index: -1;
   pointer-events: none;
 }
 
-/* — Air: let the layout breathe (Apple) — */
+/* — Air: let the layout breathe — */
 .hero { margin-top: 52px; }
 .arc-card { padding: 30px 30px 24px; }
 .tasks { margin-top: 56px; }
 
-/* — Typography fit for Fraunces (loaded 400–600) — */
-.brand__mark { font-weight: 600; letter-spacing: -0.02em; }
-.hero__eyebrow { letter-spacing: 0.16em; }
-.card__word { font-weight: 600; }
-.hero__title { letter-spacing: -0.022em; }
-
 /* — Cleaner cards: drop the heavy colored top-stripe for a hairline;
-     the accent now lives only in the icon/badge (Stripe restraint) — */
+     the accent now lives only in the icon/badge (restraint = premium) — */
 .task { border-top: 1px solid var(--line); }
 .prompt-card { border-top: 1px solid var(--line); }
 .task__icon { border-radius: 12px; }
 
-/* — Buttons: keep the single persimmon pill, but lighter, cleaner lift — */
-.cta { padding: 15px 28px; box-shadow: 0 6px 18px -9px rgba(193, 70, 32, 0.5); }
-.cta:hover { box-shadow: 0 12px 26px -11px rgba(193, 70, 32, 0.55); }
-.mic__btn { box-shadow: 0 6px 18px -9px rgba(193, 70, 32, 0.5); }
+/* — Buttons: keep the single deep-green pill, with a soft, restrained lift — */
+.cta { padding: 15px 28px; box-shadow: 0 6px 18px -9px rgba(36, 70, 56, 0.45); }
+.cta:hover { box-shadow: 0 12px 26px -11px rgba(36, 70, 56, 0.5); }
+.mic__btn { box-shadow: 0 6px 18px -9px rgba(36, 70, 56, 0.45); }
 
 /* — Tabular figures on every real number (Stripe's data signal) — */
 .stat__num, .streak__num, .task__count b, .dash__streaks b, .arc-card__meta b {
