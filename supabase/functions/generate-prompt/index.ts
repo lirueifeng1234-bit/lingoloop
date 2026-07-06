@@ -3,8 +3,7 @@
 // next session naturally makes them re-use the exact structures they slipped on.
 // Same Gemini key as analyze-speaking (set once via `supabase secrets set`).
 
-const MODEL = 'gemini-2.5-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
+import { callGemini, GeminiError } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,18 +83,15 @@ Deno.serve(async (req) => {
       },
     }
 
-    const r = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-    if (!r.ok) {
-      const detail = await r.text()
+    // deno-lint-ignore no-explicit-any
+    let data: any
+    try {
+      ;({ data } = await callGemini(apiKey, body))
+    } catch (e) {
+      const detail = e instanceof GeminiError ? e.detail : String(e)
       return json({ error: 'gemini request failed', detail }, 502)
     }
 
-    const data = await r.json()
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
     let out
     try {
