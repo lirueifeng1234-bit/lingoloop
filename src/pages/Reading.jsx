@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { resolveTodayReading, lookupWord, saveVocabWord, logSession } from '../lib/db'
 import { READING_MINUTES } from '../lib/reading'
+import SayButton from '../components/SayButton'
 
 // Split into words and the punctuation/space between them, keeping both.
 function tokenize(text) {
@@ -188,6 +189,7 @@ export default function Reading({ userId, onExit }) {
           <button className="wsheet__close" onClick={() => setSheet(null)} aria-label="Close">×</button>
           <div className="wsheet__head">
             <span className="wsheet__word">{sheet.data?.word || sheet.term}</span>
+            <SayButton text={sheet.data?.word || sheet.term} size="sm" />
             {sheet.data?.pos && <span className="wsheet__pos">{sheet.data.pos}</span>}
           </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getDueCards, reviewCard, logSession } from '../lib/db'
 import { RATINGS } from '../lib/fsrs'
+import SayButton from '../components/SayButton'
 
 export default function Review({ userId, onExit }) {
   const [cards, setCards] = useState(null) // null = loading
@@ -82,7 +83,10 @@ export default function Review({ userId, onExit }) {
       <div className="review__meter"><i style={{ width: `${(idx / total) * 100}%` }} /></div>
 
       <div className="card">
-        <div className="card__word">{card.word}</div>
+        <div className="card__word">
+          <span>{card.word}</span>
+          <SayButton text={card.word} />
+        </div>
         {!revealed && <div className="card__prompt">Do you remember it?</div>}
         {revealed && (
           <div className="card__answer">

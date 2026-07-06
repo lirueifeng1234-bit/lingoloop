@@ -16,35 +16,46 @@ function greeting() {
   return 'Good evening'
 }
 
-function TodayArc({ due, speakingDone, vocabDone }) {
-  const bothDone = speakingDone && vocabDone
+function TodayArc({ due, speakingDone, readingDone, vocabDone }) {
+  const allDone = speakingDone && readingDone && vocabDone
   return (
     <svg className="arc-svg" viewBox="0 0 760 200" role="img"
-      aria-label="Today's path: Speak, Vocab review, Done">
-      <path d="M 80 132 C 210 70 300 72 380 86" fill="none"
-        stroke="var(--persimmon)" strokeWidth="3" strokeLinecap="round"
-        opacity={speakingDone ? 1 : 0.5} />
-      <path d="M 380 86 C 470 102 560 140 680 108" fill="none"
+      aria-label="Today's path: Speak, Read, Review, Done">
+      {/* Speak → Read */}
+      <path d="M 72 140 C 140 96 200 84 268 90" fill="none"
+        stroke="var(--persimmon)" strokeWidth={speakingDone ? 3 : 2} strokeLinecap="round"
+        strokeDasharray={speakingDone ? '0' : '2 8'} opacity={speakingDone ? 1 : 0.5} />
+      {/* Read → Review */}
+      <path d="M 268 90 C 342 96 420 96 488 98" fill="none"
+        stroke="var(--gold)" strokeWidth={readingDone ? 3 : 2} strokeLinecap="round"
+        strokeDasharray={readingDone ? '0' : '2 8'} opacity={readingDone ? 1 : 0.5} />
+      {/* Review → Done */}
+      <path d="M 488 98 C 560 102 620 110 688 122" fill="none"
         stroke="var(--teal)" strokeWidth={vocabDone ? 3 : 2} strokeLinecap="round"
         strokeDasharray={vocabDone ? '0' : '2 8'} opacity={vocabDone ? 1 : 0.55} />
 
       {/* Node 1 — Speak */}
-      <circle cx="80" cy="132" r="8" fill={speakingDone ? 'var(--persimmon)' : 'var(--card)'}
+      <circle cx="72" cy="140" r="8" fill={speakingDone ? 'var(--persimmon)' : 'var(--card)'}
         stroke="var(--persimmon)" strokeWidth="2.5" />
-      <text className="arc-node-label" x="80" y="168" textAnchor="middle">Speak</text>
-      <text className="arc-node-sub" x="80" y="184" textAnchor="middle">{speakingDone ? 'done ✓' : `${SPEAKING_MINUTES} min`}</text>
+      <text className="arc-node-label" x="72" y="172" textAnchor="middle">Speak</text>
+      <text className="arc-node-sub" x="72" y="188" textAnchor="middle">{speakingDone ? 'done ✓' : `${SPEAKING_MINUTES} min`}</text>
 
-      {/* Node 2 — Vocab */}
-      <circle cx="380" cy="86" r="7" fill={vocabDone ? 'var(--teal)' : 'var(--card)'} stroke="var(--teal)" strokeWidth="2.5" />
-      <text className="arc-node-label" x="380" y="58" textAnchor="middle">Vocab</text>
-      <text className="arc-node-sub" x="380" y="42" textAnchor="middle">{vocabDone ? 'done ✓' : `${due} due`}</text>
+      {/* Node 2 — Read */}
+      <circle cx="268" cy="90" r="7" fill={readingDone ? 'var(--gold)' : 'var(--card)'} stroke="var(--gold)" strokeWidth="2.5" />
+      <text className="arc-node-label" x="268" y="62" textAnchor="middle">Read</text>
+      <text className="arc-node-sub" x="268" y="46" textAnchor="middle">{readingDone ? 'done ✓' : `${READING_MINUTES} min`}</text>
 
-      {/* Node 3 — Done */}
-      <circle cx="680" cy="108" r="7" fill="var(--card)" stroke="var(--gold)" strokeWidth="2.5" strokeDasharray={bothDone ? '0' : '2 3'} />
-      <path d="M 680 100.5 l 1.9 3.9 4.3 0.6 -3.1 3 0.7 4.3 -3.8 -2 -3.8 2 0.7 -4.3 -3.1 -3 4.3 -0.6 z"
-        fill="var(--gold)" opacity={bothDone ? 0.95 : 0.25} />
-      <text className="arc-node-label" x="680" y="144" textAnchor="middle">Done</text>
-      <text className="arc-node-sub" x="680" y="160" textAnchor="middle">streak +1</text>
+      {/* Node 3 — Review */}
+      <circle cx="488" cy="98" r="7" fill={vocabDone ? 'var(--teal)' : 'var(--card)'} stroke="var(--teal)" strokeWidth="2.5" />
+      <text className="arc-node-label" x="488" y="130" textAnchor="middle">Review</text>
+      <text className="arc-node-sub" x="488" y="146" textAnchor="middle">{vocabDone ? 'done ✓' : `${due} due`}</text>
+
+      {/* Node 4 — Done */}
+      <circle cx="688" cy="122" r="7" fill="var(--card)" stroke="var(--gold)" strokeWidth="2.5" strokeDasharray={allDone ? '0' : '2 3'} />
+      <path d="M 688 114.5 l 1.9 3.9 4.3 0.6 -3.1 3 0.7 4.3 -3.8 -2 -3.8 2 0.7 -4.3 -3.1 -3 4.3 -0.6 z"
+        fill="var(--gold)" opacity={allDone ? 0.95 : 0.25} />
+      <text className="arc-node-label" x="688" y="158" textAnchor="middle">Done</text>
+      <text className="arc-node-sub" x="688" y="174" textAnchor="middle">streak +1</text>
     </svg>
   )
 }
@@ -60,16 +71,20 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   const due = stats.dueCount ?? 0
   const progress = stats.progress ?? { speaking: false, vocab: false, reading: false }
   const week = stats.week ?? FALLBACK_WEEK
-  const totalMin = SPEAKING_MINUTES + VOCAB_MINUTES
+  const hasReading = !!onStartReading
+  const totalMin = SPEAKING_MINUTES + (hasReading ? READING_MINUTES : 0) + VOCAB_MINUTES
 
   const speakingDone = !!progress.speaking
   const vocabDone = !!progress.vocab
   const readingDone = !!progress.reading
-  const doneCount = (speakingDone ? 1 : 0) + (vocabDone ? 1 : 0)
+  const totalTasks = hasReading ? 3 : 2
+  const doneCount = (speakingDone ? 1 : 0) + (hasReading && readingDone ? 1 : 0) + (vocabDone ? 1 : 0)
+  const allDone = doneCount === totalTasks
 
-  // Speaking has priority; then vocab. Decide the single next action.
+  // Follow the loop: speak, then read to collect words, then review them all.
   let next = null
   if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
+  else if (hasReading && !readingDone) next = { fn: onStartReading, label: 'Read & collect' }
   else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
 
   return (
@@ -89,22 +104,22 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
       <section className="hero">
         <div className="hero__eyebrow">{greeting()} · Today</div>
         <h1 className="hero__title">
-          {doneCount === 2
+          {allDone
             ? <>That’s a wrap for <span className="accent">today</span>.</>
             : <><span className="accent">Speak</span> first — then lock it in.</>}
         </h1>
         <p className="hero__sub">
-          {doneCount === 2
-            ? 'Both tasks done — your streak is safe. Come back tomorrow for a fresh loop.'
+          {allDone
+            ? 'Every task done — your streak is safe. Come back tomorrow for a fresh loop.'
             : <>Your path for today is already set, so there’s nothing to decide. Just follow the curve — about {totalMin} minutes.</>}
         </p>
 
         <div className="arc-card">
           <div className="arc-card__head">
             <span className="arc-card__label">Today's loop</span>
-            <span className="arc-card__meta"><b>{doneCount} / 2</b> done</span>
+            <span className="arc-card__meta"><b>{doneCount} / {totalTasks}</b> done</span>
           </div>
-          <TodayArc due={due} speakingDone={speakingDone} vocabDone={vocabDone} />
+          <TodayArc due={due} speakingDone={speakingDone} readingDone={readingDone} vocabDone={vocabDone} />
         </div>
 
         {next ? (
@@ -208,7 +223,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           <button className="progress-link" onClick={onOpenProgress}>See your full progress →</button>
         )}
 
-        <p className="note">Speaking, vocab &amp; streak are live · your errors and new words flow into review</p>
+        <p className="note">Speaking, reading, vocab &amp; streak are live · your errors and saved words flow into review</p>
         {email && (
           <p className="note note--auth">
             {email} · <button className="signout" onClick={onSignOut}>Sign out</button>

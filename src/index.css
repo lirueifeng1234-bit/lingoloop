@@ -338,7 +338,20 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: var(--radius); box-shadow: var(--shadow-card);
   padding: 46px 34px; text-align: center;
 }
-.card__word { font-family: var(--font-display); font-size: clamp(2.2rem, 7vw, 3.2rem); font-weight: 700; letter-spacing: -0.01em; }
+.card__word { font-family: var(--font-display); font-size: clamp(2.2rem, 7vw, 3.2rem); font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; justify-content: center; gap: 0.4em; }
+
+/* Speaker button — hear a word read aloud (free on-device speech). */
+.say {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--card); color: var(--gold);
+  border-radius: 50%; cursor: pointer; padding: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.say--md { width: 1.7em; height: 1.7em; font-size: 0.42em; }
+.say--sm { width: 1.9em; height: 1.9em; font-size: 0.8rem; }
+.say:hover { background: color-mix(in srgb, var(--gold) 12%, var(--card)); border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.say:active { transform: scale(0.92); }
+.say:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .card__prompt { color: var(--ink-faint); font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 16px; }
 .card__answer { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 22px; }
 .card__def { font-size: 1.2rem; color: var(--ink); line-height: 1.5; margin: 0; }
@@ -719,7 +732,7 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--ink-faint); padding: 4px 8px;
 }
 .wsheet__close:hover { color: var(--ink); }
-.wsheet__head { display: flex; align-items: baseline; gap: 12px; padding-right: 34px; }
+.wsheet__head { display: flex; align-items: center; gap: 10px; padding-right: 34px; }
 .wsheet__word { font-family: var(--font-display); font-size: 1.55rem; font-weight: 700; }
 .wsheet__pos {
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em;
