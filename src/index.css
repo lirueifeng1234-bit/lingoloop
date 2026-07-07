@@ -756,3 +756,35 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Reading gets its own quiet entrance too */
 .read { animation: ll-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* ============================================================
+   Writing module — draft & get edited
+   ============================================================ */
+.task--writing { --accent: var(--teal); }
+
+/* The draft box — a calm, roomy page to write into (reuses the .speak shell) */
+.wbox {
+  margin-top: 18px; width: 100%; min-height: 220px; resize: vertical;
+  font-family: var(--font-body); font-size: 1.1rem; line-height: 1.7;
+  color: var(--ink); background: var(--card); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm); padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+}
+.wbox:focus { outline: none; border-color: var(--persimmon); }
+.wbox::placeholder { color: var(--ink-faint); font-style: italic; }
+
+.wbar {
+  margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+}
+.wbar .cta { margin-top: 0; }
+.wcount {
+  font-size: 0.82rem; color: var(--ink-faint); letter-spacing: 0.02em;
+  transition: color 0.16s ease;
+}
+.wcount.is-ready { color: var(--teal); }
+
+@media (max-width: 460px) {
+  .wbar { flex-direction: column-reverse; align-items: stretch; gap: 12px; }
+  .wbar .cta { justify-content: center; }
+  .wcount { text-align: center; }
+}

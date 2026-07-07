@@ -84,7 +84,12 @@ export async function getTodayProgress() {
     .gte('created_at', start.toISOString())
   if (error) throw error
   const kinds = new Set((data ?? []).map((r) => r.skill_type))
-  return { speaking: kinds.has('speaking'), vocab: kinds.has('vocab'), reading: kinds.has('reading') }
+  return {
+    speaking: kinds.has('speaking'),
+    vocab: kinds.has('vocab'),
+    reading: kinds.has('reading'),
+    writing: kinds.has('writing'),
+  }
 }
 
 // This calendar week's activity (Mon–Sun): which days had any practice.

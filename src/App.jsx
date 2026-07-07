@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx'
 import Review from './pages/Review.jsx'
 import Speaking from './pages/Speaking.jsx'
 import Reading from './pages/Reading.jsx'
+import Writing from './pages/Writing.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 
 export default function App() {
@@ -58,6 +59,9 @@ export default function App() {
   if (view === 'reading') {
     return <Reading userId={userId} onExit={() => { setView('home'); refresh() }} />
   }
+  if (view === 'writing') {
+    return <Writing userId={userId} onExit={() => { setView('home'); refresh() }} />
+  }
   if (view === 'dashboard') {
     return <Dashboard onExit={() => { setView('home'); refresh() }} />
   }
@@ -70,6 +74,7 @@ export default function App() {
       onStartSpeaking={() => setView('speaking')}
       onStartVocab={() => setView('review')}
       onStartReading={() => setView('reading')}
+      onStartWriting={() => setView('writing')}
       onOpenProgress={() => setView('dashboard')}
       onSignOut={() => supabase.auth.signOut()}
     />

@@ -7,6 +7,7 @@
  */
 import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
 import { READING_MINUTES } from '../lib/reading'
+import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
 
 function greeting() {
   const h = new Date().getHours()
@@ -16,46 +17,63 @@ function greeting() {
   return 'Good evening'
 }
 
-function TodayArc({ due, speakingDone, readingDone, vocabDone }) {
-  const allDone = speakingDone && readingDone && vocabDone
+// The signature memory-retention curve, laid out data-driven so it holds any
+// number of tasks (2–4) plus a terminal "Done" star. Nodes sit on a gentle
+// sine crest; labels alternate below/above so they never crowd the line.
+function TodayArc({ tasks }) {
+  const allDone = tasks.every((t) => t.done)
+  const pts = [
+    ...tasks,
+    { key: 'done', label: 'Done', sub: 'streak +1', done: allDone, color: 'var(--gold)', terminal: true },
+  ]
+  const n = pts.length
+  const X0 = 64, X1 = 696, BASE = 138, AMP = 52
+  const node = pts.map((p, i) => {
+    const t = n === 1 ? 0 : i / (n - 1)
+    return { ...p, x: X0 + t * (X1 - X0), y: BASE - AMP * Math.sin(Math.PI * t) }
+  })
+  const label = tasks.map((t) => t.label).join(', ')
+
   return (
     <svg className="arc-svg" viewBox="0 0 760 200" role="img"
-      aria-label="Today's path: Speak, Read, Review, Done">
-      {/* Speak → Read */}
-      <path d="M 72 140 C 140 96 200 84 268 90" fill="none"
-        stroke="var(--persimmon)" strokeWidth={speakingDone ? 3 : 2} strokeLinecap="round"
-        strokeDasharray={speakingDone ? '0' : '2 8'} opacity={speakingDone ? 1 : 0.5} />
-      {/* Read → Review */}
-      <path d="M 268 90 C 342 96 420 96 488 98" fill="none"
-        stroke="var(--gold)" strokeWidth={readingDone ? 3 : 2} strokeLinecap="round"
-        strokeDasharray={readingDone ? '0' : '2 8'} opacity={readingDone ? 1 : 0.5} />
-      {/* Review → Done */}
-      <path d="M 488 98 C 560 102 620 110 688 122" fill="none"
-        stroke="var(--teal)" strokeWidth={vocabDone ? 3 : 2} strokeLinecap="round"
-        strokeDasharray={vocabDone ? '0' : '2 8'} opacity={vocabDone ? 1 : 0.55} />
+      aria-label={`Today's path: ${label}, Done`}>
+      {/* Segments — each lit by the task it leads out of, in that task's colour */}
+      {node.slice(0, -1).map((a, i) => {
+        const b = node[i + 1]
+        const mx = (a.x + b.x) / 2
+        return (
+          <path key={`seg-${a.key}`} d={`M ${a.x} ${a.y} C ${mx} ${a.y} ${mx} ${b.y} ${b.x} ${b.y}`}
+            fill="none" stroke={a.color} strokeWidth={a.done ? 3 : 2} strokeLinecap="round"
+            strokeDasharray={a.done ? '0' : '2 8'} opacity={a.done ? 1 : 0.5} />
+        )
+      })}
 
-      {/* Node 1 — Speak */}
-      <circle cx="72" cy="140" r="8" fill={speakingDone ? 'var(--persimmon)' : 'var(--card)'}
-        stroke="var(--persimmon)" strokeWidth="2.5" />
-      <text className="arc-node-label" x="72" y="172" textAnchor="middle">Speak</text>
-      <text className="arc-node-sub" x="72" y="188" textAnchor="middle">{speakingDone ? 'done ✓' : `${SPEAKING_MINUTES} min`}</text>
-
-      {/* Node 2 — Read */}
-      <circle cx="268" cy="90" r="7" fill={readingDone ? 'var(--gold)' : 'var(--card)'} stroke="var(--gold)" strokeWidth="2.5" />
-      <text className="arc-node-label" x="268" y="62" textAnchor="middle">Read</text>
-      <text className="arc-node-sub" x="268" y="46" textAnchor="middle">{readingDone ? 'done ✓' : `${READING_MINUTES} min`}</text>
-
-      {/* Node 3 — Review */}
-      <circle cx="488" cy="98" r="7" fill={vocabDone ? 'var(--teal)' : 'var(--card)'} stroke="var(--teal)" strokeWidth="2.5" />
-      <text className="arc-node-label" x="488" y="130" textAnchor="middle">Review</text>
-      <text className="arc-node-sub" x="488" y="146" textAnchor="middle">{vocabDone ? 'done ✓' : `${due} due`}</text>
-
-      {/* Node 4 — Done */}
-      <circle cx="688" cy="122" r="7" fill="var(--card)" stroke="var(--gold)" strokeWidth="2.5" strokeDasharray={allDone ? '0' : '2 3'} />
-      <path d="M 688 114.5 l 1.9 3.9 4.3 0.6 -3.1 3 0.7 4.3 -3.8 -2 -3.8 2 0.7 -4.3 -3.1 -3 4.3 -0.6 z"
-        fill="var(--gold)" opacity={allDone ? 0.95 : 0.25} />
-      <text className="arc-node-label" x="688" y="158" textAnchor="middle">Done</text>
-      <text className="arc-node-sub" x="688" y="174" textAnchor="middle">streak +1</text>
+      {/* Nodes + alternating labels */}
+      {node.map((p, i) => {
+        const below = i % 2 === 0
+        const ly = below ? p.y + 30 : p.y - 19
+        const sy = below ? p.y + 46 : p.y - 35
+        return (
+          <g key={p.key}>
+            {p.terminal ? (
+              <>
+                <circle cx={p.x} cy={p.y} r="7" fill="var(--card)" stroke="var(--gold)"
+                  strokeWidth="2.5" strokeDasharray={allDone ? '0' : '2 3'} />
+                <path transform={`translate(${p.x - 688} ${p.y - 121.7})`}
+                  d="M 688 114.5 l 1.9 3.9 4.3 0.6 -3.1 3 0.7 4.3 -3.8 -2 -3.8 2 0.7 -4.3 -3.1 -3 4.3 -0.6 z"
+                  fill="var(--gold)" opacity={allDone ? 0.95 : 0.25} />
+              </>
+            ) : (
+              <circle cx={p.x} cy={p.y} r="7.5" fill={p.done ? p.color : 'var(--card)'}
+                stroke={p.color} strokeWidth="2.5" />
+            )}
+            <text className="arc-node-label" x={p.x} y={ly} textAnchor="middle">{p.label}</text>
+            <text className="arc-node-sub" x={p.x} y={sy} textAnchor="middle">
+              {p.done && !p.terminal ? 'done ✓' : p.sub}
+            </text>
+          </g>
+        )
+      })}
     </svg>
   )
 }
@@ -65,26 +83,41 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onOpenProgress, onSignOut }) {
+export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onOpenProgress, onSignOut }) {
   const prompt = propPrompt ?? pickPrompt()
+  const writingPrompt = pickWritingPrompt()
   const streak = stats.streak ?? 0
   const due = stats.dueCount ?? 0
-  const progress = stats.progress ?? { speaking: false, vocab: false, reading: false }
+  const progress = stats.progress ?? { speaking: false, vocab: false, reading: false, writing: false }
   const week = stats.week ?? FALLBACK_WEEK
   const hasReading = !!onStartReading
-  const totalMin = SPEAKING_MINUTES + (hasReading ? READING_MINUTES : 0) + VOCAB_MINUTES
+  const hasWriting = !!onStartWriting
 
   const speakingDone = !!progress.speaking
   const vocabDone = !!progress.vocab
   const readingDone = !!progress.reading
-  const totalTasks = hasReading ? 3 : 2
-  const doneCount = (speakingDone ? 1 : 0) + (hasReading && readingDone ? 1 : 0) + (vocabDone ? 1 : 0)
-  const allDone = doneCount === totalTasks
+  const writingDone = !!progress.writing
 
-  // Follow the loop: speak, then read to collect words, then review them all.
+  // The loop, in order: speak → read (collect) → write (produce) → review.
+  // Built as one list so the arc, counts, and next-action all stay in sync.
+  const tasks = [
+    { key: 'speaking', label: 'Speak', sub: `${SPEAKING_MINUTES} min`, done: speakingDone, color: 'var(--persimmon)' },
+  ]
+  if (hasReading) tasks.push({ key: 'reading', label: 'Read', sub: `${READING_MINUTES} min`, done: readingDone, color: 'var(--gold)' })
+  if (hasWriting) tasks.push({ key: 'writing', label: 'Write', sub: `${WRITING_MINUTES} min`, done: writingDone, color: 'var(--teal)' })
+  tasks.push({ key: 'vocab', label: 'Review', sub: `${due} due`, done: vocabDone, color: 'var(--persimmon-deep)' })
+
+  const totalTasks = tasks.length
+  const doneCount = tasks.filter((t) => t.done).length
+  const allDone = doneCount === totalTasks
+  const totalMin =
+    SPEAKING_MINUTES + (hasReading ? READING_MINUTES : 0) + (hasWriting ? WRITING_MINUTES : 0) + VOCAB_MINUTES
+
+  // Follow the loop: speak, read to collect, write to produce, then review it all.
   let next = null
   if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
   else if (hasReading && !readingDone) next = { fn: onStartReading, label: 'Read & collect' }
+  else if (hasWriting && !writingDone) next = { fn: onStartWriting, label: 'Write today’s piece' }
   else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
 
   return (
@@ -119,7 +152,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             <span className="arc-card__label">Today's loop</span>
             <span className="arc-card__meta"><b>{doneCount} / {totalTasks}</b> done</span>
           </div>
-          <TodayArc due={due} speakingDone={speakingDone} readingDone={readingDone} vocabDone={vocabDone} />
+          <TodayArc tasks={tasks} />
         </div>
 
         {next ? (
@@ -205,6 +238,28 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               </div>
             </article>
           )}
+
+          {/* Writing */}
+          {onStartWriting && (
+            <article className={`task task--writing${writingDone ? ' is-done' : ''}`}>
+              <div className="task__top">
+                <span className="task__badge">
+                  <span className="task__icon" aria-hidden="true">✍️</span>
+                  Writing
+                </span>
+                <span className="task__count">{writingDone ? '✓ done' : <><b>1</b> draft</>}</span>
+              </div>
+              <h3 className="task__title">{writingPrompt.scenario}</h3>
+              <p className="task__desc">{writingPrompt.text}</p>
+              {writingPrompt.focus && <p className="task__focus">Targets: {writingPrompt.focus}</p>}
+              <div className="task__foot">
+                <span className="task__time">~{WRITING_MINUTES} min</span>
+                <button className="task__go" onClick={onStartWriting}>
+                  {writingDone ? 'Again →' : 'Write →'}
+                </button>
+              </div>
+            </article>
+          )}
         </div>
 
         <div className="week">
@@ -223,7 +278,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           <button className="progress-link" onClick={onOpenProgress}>See your full progress →</button>
         )}
 
-        <p className="note">Speaking, reading, vocab &amp; streak are live · your errors and saved words flow into review</p>
+        <p className="note">Speaking, reading, writing, vocab &amp; streak are live · your errors and saved words flow into review</p>
         {email && (
           <p className="note note--auth">
             {email} · <button className="signout" onClick={onSignOut}>Sign out</button>
