@@ -4,6 +4,7 @@ import { useAudioRecorder } from '../hooks/useAudioRecorder'
 import { blobToWavBase64 } from '../lib/audio'
 import { pickPrompt } from '../lib/prompts'
 import { logSession } from '../lib/db'
+import { withUserKey } from '../lib/apiKey'
 
 function fmt(secs) {
   const m = Math.floor(secs / 60)
@@ -131,7 +132,7 @@ export default function Speaking({ userId, prompt: propPrompt, onExit }) {
     try {
       const audioBase64 = await blobToWavBase64(clip.blob)
       const { data, error } = await supabase.functions.invoke('analyze-speaking', {
-        body: { prompt: prompt.text, audioBase64, mimeType: 'audio/wav' },
+        body: withUserKey({ prompt: prompt.text, audioBase64, mimeType: 'audio/wav' }),
       })
 
       if (error || data?.error) {

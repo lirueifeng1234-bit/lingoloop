@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { pickWritingPrompt } from '../lib/writing'
 import { logSession } from '../lib/db'
+import { withUserKey } from '../lib/apiKey'
 
 const MIN_WORDS = 25
 
@@ -127,7 +128,7 @@ export default function Writing({ userId, onExit }) {
     setPhase('analyzing')
     try {
       const { data, error } = await supabase.functions.invoke('analyze-writing', {
-        body: { prompt: prompt.text, text },
+        body: withUserKey({ prompt: prompt.text, text }),
       })
 
       if (error || data?.error) {

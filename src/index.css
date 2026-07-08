@@ -788,3 +788,126 @@ button { font-family: inherit; cursor: pointer; }
   .wbar .cta { justify-content: center; }
   .wcount { text-align: center; }
 }
+
+/* ── Settings (per-user Gemini key) ─────────────────────────── */
+.settings {
+  max-width: 620px;
+  margin: 8px auto 0;
+  padding: 0 4px;
+}
+.settings__title {
+  font-family: var(--font-display);
+  font-size: var(--step-h2);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.settings__sub {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  margin: 0 0 22px;
+}
+.settings__status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 13px 16px;
+  margin-bottom: 24px;
+}
+.settings__dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+}
+.settings__status.is-own .settings__dot { background: var(--teal); }
+.settings__status.is-shared .settings__dot { background: var(--gold); }
+.settings__mask {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.settings__label {
+  display: block;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+.settings__row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.settings__input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 13px 15px;
+}
+.settings__input:focus { outline: none; border-color: var(--persimmon); }
+.settings__peek {
+  flex: none;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  background: var(--card-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 15px;
+  cursor: pointer;
+}
+.settings__peek:hover { color: var(--ink); }
+.settings__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.settings__save.cta { margin-top: 0; }
+.settings__remove {
+  font-size: 0.9rem;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.settings__remove:hover { color: var(--persimmon-deep); }
+.settings__flash {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: var(--teal);
+}
+.settings__help {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.settings__help a { color: var(--persimmon); text-underline-offset: 2px; }
+.settings__note { color: var(--ink-faint); font-size: 0.85rem; margin-bottom: 0; }
+
+@media (max-width: 460px) {
+  .settings__row { flex-direction: column; }
+  .settings__peek { padding: 11px 0; }
+  .settings__actions { flex-direction: column-reverse; align-items: stretch; gap: 12px; }
+  .settings__save.cta { justify-content: center; }
+  .settings__remove { text-align: center; }
+}

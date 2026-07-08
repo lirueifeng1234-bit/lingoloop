@@ -83,7 +83,7 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onOpenProgress, onSignOut }) {
+export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onOpenProgress, onOpenSettings, onSignOut }) {
   const prompt = propPrompt ?? pickPrompt()
   const writingPrompt = pickWritingPrompt()
   const streak = stats.streak ?? 0
@@ -281,7 +281,9 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
         <p className="note">Speaking, reading, writing, vocab &amp; streak are live · your errors and saved words flow into review</p>
         {email && (
           <p className="note note--auth">
-            {email} · <button className="signout" onClick={onSignOut}>Sign out</button>
+            {email}
+            {onOpenSettings && <> · <button className="signout" onClick={onOpenSettings}>Settings</button></>}
+            {' · '}<button className="signout" onClick={onSignOut}>Sign out</button>
           </p>
         )}
       </section>

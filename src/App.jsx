@@ -9,6 +9,8 @@ import Speaking from './pages/Speaking.jsx'
 import Reading from './pages/Reading.jsx'
 import Writing from './pages/Writing.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import Settings from './pages/Settings.jsx'
+import { clearUserKey } from './lib/apiKey'
 
 export default function App() {
   const session = useSession()
@@ -65,6 +67,9 @@ export default function App() {
   if (view === 'dashboard') {
     return <Dashboard onExit={() => { setView('home'); refresh() }} />
   }
+  if (view === 'settings') {
+    return <Settings email={session.user?.email} onExit={() => { setView('home'); refresh() }} />
+  }
 
   return (
     <Home
@@ -76,7 +81,8 @@ export default function App() {
       onStartReading={() => setView('reading')}
       onStartWriting={() => setView('writing')}
       onOpenProgress={() => setView('dashboard')}
-      onSignOut={() => supabase.auth.signOut()}
+      onOpenSettings={() => setView('settings')}
+      onSignOut={() => { clearUserKey(); supabase.auth.signOut() }}
     />
   )
 }

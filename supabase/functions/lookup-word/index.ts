@@ -4,7 +4,7 @@
 // to slot straight into the vocabulary deck (definition + example).
 // Same Gemini key as the other functions.
 
-import { callGemini, GeminiError } from '../_shared/gemini.ts'
+import { callGemini, GeminiError, resolveApiKey } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,10 +34,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!apiKey) return json({ error: 'GEMINI_API_KEY not set on the server' }, 500)
-
-    const { word, context } = await req.json()
+    const { word, context, userApiKey } = await req.json()
+    const apiKey = resolveApiKey(userApiKey)
+    if (!apiKey) return json({ error: 'No Gemini API key — add your own in Settings.' }, 400)
     if (!word || !String(word).trim()) return json({ error: 'no word provided' }, 400)
 
     const instruction = [

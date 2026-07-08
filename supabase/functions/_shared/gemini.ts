@@ -26,6 +26,18 @@ export const GEMINI_MODELS = [
 const cooldownUntil: Record<string, number> = {}
 const isExhausted = (m: string) => (cooldownUntil[m] ?? 0) > Date.now()
 
+// Pick the key for this request. The caller's OWN key (sent from the app's
+// Settings, kept only in their browser) wins, so each user spends their own
+// free-tier quota against their own Google account. The built-in server key is
+// the fallback, so the owner keeps working with no setup. Returns null if
+// neither exists.
+export function resolveApiKey(userApiKey?: unknown): string | null {
+  const own = typeof userApiKey === 'string' ? userApiKey.trim() : ''
+  if (own) return own
+  const server = Deno.env.get('GEMINI_API_KEY')
+  return server && server.trim() ? server : null
+}
+
 export interface GeminiResult {
   // Raw Gemini generateContent response.
   data: unknown

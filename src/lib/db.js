@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { schedule } from './fsrs'
 import { pickPrompt } from './prompts'
 import { pickPassage } from './reading'
+import { withUserKey } from './apiKey'
 
 const nowISO = () => new Date().toISOString()
 const midnightISO = () => {
@@ -209,7 +210,7 @@ export async function resolveTodayPrompt(userId) {
       getRecentScenarios(20),
     ])
     const { data, error } = await supabase.functions.invoke('generate-prompt', {
-      body: { errors, recentScenarios },
+      body: withUserKey({ errors, recentScenarios }),
     })
     if (!error && data && data.prompt_text) {
       const prompt = {
@@ -346,7 +347,7 @@ export async function resolveTodayReading({ force = false } = {}) {
 
   try {
     const { data, error } = await supabase.functions.invoke('generate-reading', {
-      body: { recentTopics: recentTopics() },
+      body: withUserKey({ recentTopics: recentTopics() }),
     })
     if (!error && data && data.body) {
       writeCache(data)
@@ -361,7 +362,7 @@ export async function resolveTodayReading({ force = false } = {}) {
 // In-context lookup for a tapped word. Throws on failure so the UI can react.
 export async function lookupWord(word, context) {
   const { data, error } = await supabase.functions.invoke('lookup-word', {
-    body: { word, context },
+    body: withUserKey({ word, context }),
   })
   if (error) throw error
   if (!data || data.error || !data.definition) throw new Error(data?.error || 'lookup failed')

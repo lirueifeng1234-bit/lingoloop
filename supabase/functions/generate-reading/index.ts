@@ -3,7 +3,7 @@
 // pitched at C1–C2, plus a glossary of the highest-value words in it.
 // Same Gemini key as the other functions (set once via `supabase secrets set`).
 
-import { callGemini, GeminiError } from '../_shared/gemini.ts'
+import { callGemini, GeminiError, resolveApiKey } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,10 +45,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!apiKey) return json({ error: 'GEMINI_API_KEY not set on the server' }, 500)
-
-    const { recentTopics } = await req.json().catch(() => ({}))
+    const { recentTopics, userApiKey } = await req.json().catch(() => ({}))
+    const apiKey = resolveApiKey(userApiKey)
+    if (!apiKey) return json({ error: 'No Gemini API key — add your own in Settings.' }, 400)
     const avoid = Array.isArray(recentTopics) ? recentTopics.filter(Boolean) : []
 
     const instruction = [
