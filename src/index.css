@@ -249,7 +249,10 @@ button { font-family: inherit; cursor: pointer; }
 .task__count b { font-size: 1.35rem; color: var(--ink); font-weight: 600; }
 
 .task__title { font-family: var(--font-display); font-size: 1.28rem; font-weight: 600; }
-.task__desc { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; margin: 0; }
+.task__desc {
+  color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
 .task__focus {
   margin: 10px 0 0; align-self: flex-start;
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em;
