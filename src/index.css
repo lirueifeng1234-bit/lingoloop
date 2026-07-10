@@ -44,6 +44,8 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; }
+/* Kill double-tap-to-zoom app-wide; the layout is fixed-width, not a document. */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
 
 body {
   font-family: var(--font-body);

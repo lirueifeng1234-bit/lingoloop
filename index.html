@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Lock zoom so an accidental pinch can't shrink the layout and strand
+         content on one side — this is a fixed-width app UI, not a document.
+         maximum-scale + user-scalable=no together stop pinch-zoom on iOS. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>LingoLoop · 15 minutes a day</title>
     <meta name="description" content="Build an English habit in 15 minutes a day. Speaking first, spaced vocabulary review." />
     <meta name="theme-color" content="#f3f1ea" />
@@ -20,6 +23,15 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- iOS Safari (in-browser) ignores user-scalable=no for accessibility, so
+         a pinch still zooms and strands the layout. Cancelling the gesture*
+         events blocks pinch-zoom there too; touch-action on <body> kills the
+         double-tap zoom. Both are no-ops once installed as a home-screen app. -->
+    <script>
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach((evt) =>
+        document.addEventListener(evt, (e) => e.preventDefault(), { passive: false })
+      )
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
