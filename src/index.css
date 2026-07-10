@@ -316,8 +316,18 @@ button { font-family: inherit; cursor: pointer; }
 .auth__link {
   margin-top: 18px; background: none; border: none;
   color: var(--teal); font-family: var(--font-body); font-size: 0.92rem;
-  text-decoration: underline; padding: 0;
+  text-decoration: underline; padding: 0; cursor: pointer;
 }
+.auth__pwrow { position: relative; display: flex; }
+.auth__pwrow .auth__input { padding-right: 62px; }
+.auth__peek {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 0.85rem; color: var(--ink-faint);
+  padding: 8px 10px;
+}
+.auth__peek:hover { color: var(--persimmon-deep); }
+.auth__notice { color: var(--teal); margin-top: 14px; font-size: 0.9rem; line-height: 1.5; }
 
 /* ---------- review ---------- */
 .review {

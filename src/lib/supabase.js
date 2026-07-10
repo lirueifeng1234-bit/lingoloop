@@ -11,4 +11,13 @@ if (!url || !anonKey) {
   )
 }
 
-export const supabase = createClient(url ?? '', anonKey ?? '')
+// persistSession + autoRefreshToken keep the user signed in across app launches
+// (session lives in localStorage and refreshes itself), so password sign-in is a
+// one-time thing per device — no re-logging in every visit.
+export const supabase = createClient(url ?? '', anonKey ?? '', {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})
