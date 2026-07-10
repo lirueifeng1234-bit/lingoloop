@@ -5,6 +5,7 @@
  * shared with the speaking page.
  * Signature element: TodayArc — a memory-retention curve with today's tasks on it.
  */
+import { useCountUp } from '../hooks/useCountUp'
 import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
 import { READING_MINUTES } from '../lib/reading'
 import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
@@ -88,6 +89,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   const prompt = propPrompt ?? pickPrompt()
   const writingPrompt = pickWritingPrompt()
   const streak = stats.streak ?? 0
+  const streakShown = useCountUp(streak, 700)
   const due = stats.dueCount ?? 0
   const progress = stats.progress ?? { speaking: false, vocab: false, reading: false, writing: false }
   const week = stats.week ?? FALLBACK_WEEK
@@ -146,7 +148,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
         </div>
         <div className="streak" title="Consecutive days practised">
           <span className="streak__flame">🔥</span>
-          <span className="streak__num">{streak}</span>
+          <span className="streak__num">{streakShown}</span>
           <span className="streak__unit">day streak</span>
         </div>
       </header>

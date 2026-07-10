@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from 'react'
 import { getDashboard } from '../lib/db'
+import { useCountUp } from '../hooks/useCountUp'
 
 const CAT_LABEL = {
   grammar: 'Grammar',
@@ -48,9 +49,10 @@ function GrowthCurve({ growth }) {
         </linearGradient>
       </defs>
       <line x1={padX} y1={base} x2={W - padX} y2={base} stroke="var(--line)" strokeWidth="1" />
-      <path d={area} fill="url(#growthFill)" />
-      <path d={line} fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={last[0]} cy={last[1]} r="4.5" fill="var(--card)" stroke="var(--teal)" strokeWidth="2.5" />
+      <path className="growth__area" d={area} fill="url(#growthFill)" />
+      {/* pathLength=1 normalises the dash so CSS can "draw" the line in */}
+      <path className="growth__line" pathLength="1" d={line} fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle className="growth__dot" cx={last[0]} cy={last[1]} r="4.5" fill="var(--card)" stroke="var(--teal)" strokeWidth="2.5" />
       <text className="growth__val" x={last[0]} y={last[1] - 12} textAnchor="middle">{growth[n - 1].total}</text>
       <text className="growth__ax" x={padX} y={H - 9} textAnchor="start">{fmtDate(growth[0].date)}</text>
       {n > 1 && <text className="growth__ax" x={W - padX} y={H - 9} textAnchor="end">{fmtDate(growth[n - 1].date)}</text>}
@@ -88,9 +90,10 @@ function ActivityStrip({ recent }) {
 }
 
 function Stat({ num, label, tone }) {
+  const shown = useCountUp(num) // numbers roll up as the dashboard lands
   return (
     <div className={`stat stat--${tone}`}>
-      <span className="stat__num">{num}</span>
+      <span className="stat__num">{shown}</span>
       <span className="stat__label">{label}</span>
     </div>
   )
