@@ -132,8 +132,17 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
     <div className="shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand__mark">Lingo<em>Loop</em></span>
-          <span className="brand__tag">15 minutes a day</span>
+          <img
+            className="brand__logo"
+            src={`${import.meta.env.BASE_URL}icon-192.png`}
+            alt=""
+            width="38"
+            height="38"
+          />
+          <div className="brand__names">
+            <span className="brand__mark">Lingo<em>Loop</em></span>
+            <span className="brand__tag">15 minutes a day</span>
+          </div>
         </div>
         <div className="streak" title="Consecutive days practised">
           <span className="streak__flame">🔥</span>

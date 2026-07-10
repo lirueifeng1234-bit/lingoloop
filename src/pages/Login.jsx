@@ -50,7 +50,16 @@ export default function Login() {
   return (
     <div className="auth">
       <div className="auth__card">
-        <span className="brand__mark">Lingo<em>Loop</em></span>
+        <div className="auth__brand">
+          <img
+            className="auth__logo"
+            src={`${import.meta.env.BASE_URL}icon-192.png`}
+            alt=""
+            width="60"
+            height="60"
+          />
+          <span className="brand__mark">Lingo<em>Loop</em></span>
+        </div>
 
         <h1 className="auth__title">{isUp ? 'Create your account' : 'Welcome back'}</h1>
         <p className="auth__sub">
