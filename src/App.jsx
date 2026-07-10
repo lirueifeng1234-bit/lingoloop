@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from './hooks/useSession'
+import { useLivingGradient } from './hooks/useLivingGradient'
 import { supabase } from './lib/supabase'
 import { ensureStarterDeck, getDueCount, getStreak, getTodayProgress, getWeekActivity, resolveTodayPrompt } from './lib/db'
 import Home from './pages/Home.jsx'
@@ -13,6 +14,7 @@ import Settings from './pages/Settings.jsx'
 import { clearUserKey } from './lib/apiKey'
 
 export default function App() {
+  useLivingGradient() // ambient pointer-reactive gradient on every screen
   const session = useSession()
   const [view, setView] = useState('home') // 'home' | 'review'
   const [stats, setStats] = useState({ dueCount: null, streak: null, progress: null, week: null })

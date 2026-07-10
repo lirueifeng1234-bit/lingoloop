@@ -977,3 +977,197 @@ button { font-family: inherit; cursor: pointer; }
   text-underline-offset: 3px;
 }
 .keygate__link:hover { text-decoration: underline; color: var(--persimmon-deep); }
+
+/* ============================================================
+   精品 / Luxury polish layer  (2026-07-10)
+   Pushes the app toward a boutique, Apple-grade finish inside
+   the existing ivory + sapphire + gold identity: crafted paper
+   cards, metal-gold accents, a dimensional CTA, and calmer air.
+   Appended last so it layers cleanly over everything above.
+   ============================================================ */
+
+/* — Calmer canvas: soften the warm mesh so the page reads as
+     fine paper, not a gradient demo — */
+.shell::before { opacity: 0.6; filter: blur(34px) saturate(1); }
+
+/* — Air & rhythm: let the composition breathe like a spread — */
+.hero { margin-top: 60px; }
+.hero__sub { margin-top: 16px; }
+.arc-card { margin-top: 30px; padding: 32px 32px 26px; }
+.tasks { margin-top: 66px; }
+.task-grid { gap: 18px; }
+.task { padding: 24px; }
+.week { margin-top: 32px; }
+
+/* — Crafted paper: hairline border + a fine top sheen + a soft,
+     far-cast ambient shadow. This is the core "expensive" cue. — */
+.arc-card, .task, .week, .prompt-card, .auth__card, .panel {
+  border-color: rgba(34, 38, 31, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(27, 36, 29, 0.03),
+    0 18px 40px -24px rgba(27, 36, 29, 0.2);
+}
+
+/* The signature loop card sits a touch higher off the page. */
+.arc-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 4px rgba(27, 36, 29, 0.04),
+    0 30px 60px -30px rgba(27, 36, 29, 0.26);
+}
+
+/* — Slower, springier card lift — */
+.task { transition: transform 0.24s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.24s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.task:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 4px rgba(27, 36, 29, 0.05),
+    0 34px 60px -30px rgba(27, 36, 29, 0.3);
+}
+
+/* — Hero type: tighter, more confident; eyebrow in metal gold to
+     rhyme with the logo and the streak flame — */
+.hero__title { letter-spacing: -0.022em; line-height: 1.06; }
+.hero__eyebrow { letter-spacing: 0.18em; color: var(--gold); }
+.hero__eyebrow::before { background: var(--gold); opacity: 0.65; width: 30px; }
+
+/* — Streak pill: crafted, with the same inner highlight — */
+.streak {
+  border-color: rgba(34, 38, 31, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px rgba(27, 36, 29, 0.28);
+}
+
+/* — Icon tiles: iOS-app-chip gradient + a soft inner ring — */
+.task__icon {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 17%, #fff) 0%,
+      color-mix(in srgb, var(--accent) 9%, transparent) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* — CTA: a deeper, dimensional sapphire with a top sheen so the
+     primary action feels like a solid, machined object — */
+.cta:not(.cta--done) {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--persimmon) 86%, #fff) 0%,
+    var(--persimmon) 50%,
+    var(--persimmon-deep) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 26px -12px rgba(46, 74, 131, 0.55);
+}
+.cta:not(.cta--done):hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 16px 34px -14px rgba(46, 74, 131, 0.62);
+}
+
+/* — Targets chip: quieter, ringed rather than filled — */
+.task__focus, .prompt-card__focus {
+  background: color-mix(in srgb, var(--teal) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--teal) 20%, transparent);
+}
+
+/* — Outline "go" buttons gain a soft coloured glow on hover — */
+.task__go { transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease; }
+.task__go:hover { box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* — Week dots: finer resting ring — */
+.dot__mark { border-color: rgba(34, 38, 31, 0.14); }
+
+/* ============================================================
+   Living gradient  (2026-07-10)
+   The premium finish now *moves*. Three reactions:
+   1) an aurora that slowly breathes AND drifts toward the pointer
+   2) cards that catch a cursor-tracked sheen on hover
+   3) a gold wash that deepens as today's loop gets completed
+   Pointer + progress arrive from Home.jsx as CSS variables
+   (--mx/--my on cards & shell; --progress on .shell).
+   ============================================================ */
+
+/* Aurora: autonomous drift blended with live pointer parallax, on EVERY
+   screen. The gold stop's alpha tracks --progress (set on Home's .shell),
+   so finishing tasks warms the whole page; elsewhere --progress defaults to
+   0 and that stop simply stays invisible. Centred via left/right/margin so
+   `transform` stays free for motion. */
+.shell, .speak, .reading, .review, .dash, .auth { position: relative; z-index: 0; }
+.shell::before,
+.speak::before,
+.reading::before,
+.review::before,
+.dash::before,
+.auth::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  top: -60px; left: 0; right: 0; margin: 0 auto; transform: none;
+  width: min(1160px, 138%); height: 520px;
+  background:
+    radial-gradient(38% 60% at 17% 26%, rgba(58, 93, 162, 0.16), transparent 68%),
+    radial-gradient(40% 58% at 72% 12%, rgba(53, 107, 115, 0.15), transparent 70%),
+    radial-gradient(44% 62% at 92% 44%, rgba(169, 130, 47, 0.15), transparent 70%),
+    radial-gradient(60% 70% at 50% -6%, rgba(169, 130, 47, calc(0.24 * var(--progress, 0))), transparent 66%),
+    radial-gradient(56% 64% at 46% 0%, rgba(240, 234, 214, 0.5), transparent 72%);
+  filter: blur(34px) saturate(1.03);
+  opacity: 0.74;
+  will-change: transform;
+  animation: ll-aurora 24s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes ll-aurora {
+  0% {
+    transform:
+      translate(calc((var(--mx, 0.5) - 0.5) * 48px - 16px),
+                calc((var(--my, 0.3) - 0.5) * 32px - 10px)) scale(1.02);
+  }
+  100% {
+    transform:
+      translate(calc((var(--mx, 0.5) - 0.5) * 48px + 16px),
+                calc((var(--my, 0.3) - 0.5) * 32px + 12px)) scale(1.07);
+  }
+}
+
+/* Card spotlight: a soft glow that follows the cursor across every card —
+   task cards, the loop card, the speaking/writing prompt, the review card,
+   dashboard panels and the auth card. Content is lifted above the glow layer
+   so text never dims. The glow borrows the card's --accent, falling back to
+   gold where a card has none. */
+.task, .arc-card, .prompt-card, .card, .panel, .auth__card { position: relative; }
+.task > *, .arc-card > *, .prompt-card > *, .card > *, .panel > *, .auth__card > * {
+  position: relative; z-index: 1;
+}
+.task::after, .arc-card::after, .prompt-card::after,
+.card::after, .panel::after, .auth__card::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  opacity: 0; transition: opacity 0.4s ease; pointer-events: none; z-index: 0;
+  background: radial-gradient(260px circle at var(--cx, 50%) var(--cy, -30%),
+    color-mix(in srgb, var(--accent, var(--gold)) 18%, transparent), transparent 60%);
+}
+.arc-card::after {
+  background: radial-gradient(360px circle at var(--cx, 50%) var(--cy, -30%),
+    rgba(169, 130, 47, 0.13), transparent 58%);
+}
+.task:hover::after, .arc-card:hover::after, .prompt-card:hover::after,
+.card:hover::after, .panel:hover::after, .auth__card:hover::after { opacity: 1; }
+
+/* CTA: a light glint sweeps across on hover — the button reads as lacquered.
+   `overflow: hidden` clips the glint to the pill; it never clips the element's
+   own focus outline or drop shadow. */
+.cta { position: relative; overflow: hidden; }
+.cta::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -70%; width: 48%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-18deg); opacity: 0; pointer-events: none;
+}
+.cta:not(.cta--done):hover::after { animation: ll-sheen 0.85s ease; }
+@keyframes ll-sheen {
+  0% { left: -70%; opacity: 0; }
+  18% { opacity: 0.7; }
+  100% { left: 130%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell::before, .speak::before, .reading::before,
+  .review::before, .dash::before, .auth::before { animation: none; transform: none; }
+  .cta::after { display: none; }
+}

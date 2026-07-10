@@ -129,7 +129,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
 
   return (
-    <div className="shell">
+    <div className="shell" style={{ '--progress': totalTasks ? (doneCount / totalTasks).toFixed(3) : 0 }}>
       <header className="topbar">
         <div className="brand">
           <img
