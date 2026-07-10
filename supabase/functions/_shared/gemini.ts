@@ -26,16 +26,46 @@ export const GEMINI_MODELS = [
 const cooldownUntil: Record<string, number> = {}
 const isExhausted = (m: string) => (cooldownUntil[m] ?? 0) > Date.now()
 
+// The single account allowed to fall back to the built-in server key. Everyone
+// else must bring their own key. Overridable via env, defaults to the owner.
+export const OWNER_EMAIL =
+  (Deno.env.get('OWNER_EMAIL') || 'lirueifeng1234@gmail.com').trim().toLowerCase()
+
+// Read the signed-in user's email out of the JWT. We can trust it because the
+// Supabase gateway verifies the token's signature (verify_jwt) BEFORE this
+// function runs, so a forged/expired token never reaches us. Best-effort: on
+// any decode problem we return null, which just means "not the owner".
+export function getCallerEmail(req: Request): string | null {
+  const auth = req.headers.get('Authorization') || req.headers.get('authorization')
+  if (!auth) return null
+  const token = auth.replace(/^Bearer\s+/i, '').trim()
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  try {
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    b64 += '='.repeat((4 - (b64.length % 4)) % 4) // restore base64 padding
+    const payload = JSON.parse(atob(b64))
+    const email = payload?.email
+    return typeof email === 'string' ? email.trim().toLowerCase() : null
+  } catch {
+    return null
+  }
+}
+
 // Pick the key for this request. The caller's OWN key (sent from the app's
-// Settings, kept only in their browser) wins, so each user spends their own
-// free-tier quota against their own Google account. The built-in server key is
-// the fallback, so the owner keeps working with no setup. Returns null if
-// neither exists.
-export function resolveApiKey(userApiKey?: unknown): string | null {
+// Settings, kept only in their browser) always wins, so each user spends their
+// own free-tier quota against their own Google account. The built-in server key
+// is reserved for the OWNER only — every other account must add their own key,
+// so nobody else can quietly burn the owner's quota. Returns null if the caller
+// has no usable key.
+export function resolveApiKey(userApiKey?: unknown, callerEmail?: string | null): string | null {
   const own = typeof userApiKey === 'string' ? userApiKey.trim() : ''
   if (own) return own
-  const server = Deno.env.get('GEMINI_API_KEY')
-  return server && server.trim() ? server : null
+  if (callerEmail && callerEmail.trim().toLowerCase() === OWNER_EMAIL) {
+    const server = Deno.env.get('GEMINI_API_KEY')
+    return server && server.trim() ? server : null
+  }
+  return null
 }
 
 export interface GeminiResult {

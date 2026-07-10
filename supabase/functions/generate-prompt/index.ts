@@ -3,7 +3,7 @@
 // next session naturally makes them re-use the exact structures they slipped on.
 // Same Gemini key as analyze-speaking (set once via `supabase secrets set`).
 
-import { callGemini, GeminiError, resolveApiKey } from '../_shared/gemini.ts'
+import { callGemini, GeminiError, getCallerEmail, resolveApiKey } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
   try {
     const { errors, recentScenarios, userApiKey } = await req.json()
-    const apiKey = resolveApiKey(userApiKey)
+    const apiKey = resolveApiKey(userApiKey, getCallerEmail(req))
     if (!apiKey) return json({ error: 'No Gemini API key — add your own in Settings.' }, 400)
     const errList = Array.isArray(errors) ? errors : []
     const avoid = Array.isArray(recentScenarios) ? recentScenarios.filter(Boolean) : []

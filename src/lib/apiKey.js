@@ -9,6 +9,22 @@
 
 const KEY = 'll_gemini_key'
 
+// The one account that may use the app's built-in Gemini key. Everyone else
+// must add their own on the Settings page before they can practise — mirrors the
+// server-side rule in supabase/functions/_shared/gemini.ts (OWNER_EMAIL).
+export const OWNER_EMAIL = 'lirueifeng1234@gmail.com'
+
+export function isOwner(email) {
+  return String(email || '').trim().toLowerCase() === OWNER_EMAIL
+}
+
+// True when this signed-in user still needs to add their own key: they aren't
+// the owner and haven't saved one yet. The whole app should nudge them to
+// Settings until this clears.
+export function needsOwnKey(email) {
+  return !isOwner(email) && !hasUserKey()
+}
+
 export function getUserKey() {
   try { return localStorage.getItem(KEY) || '' } catch { return '' }
 }

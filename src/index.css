@@ -911,3 +911,36 @@ button { font-family: inherit; cursor: pointer; }
   .settings__save.cta { justify-content: center; }
   .settings__remove { text-align: center; }
 }
+
+/* ── Key gate (non-owner must add their own Gemini key) ── */
+.keygate {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin: 4px 0 22px;
+  padding: 16px 18px;
+  background: var(--card-2);
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-sm);
+}
+.keygate__icon { font-size: 1.2rem; line-height: 1.5; flex: none; }
+.keygate__body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.keygate__body b { color: var(--ink); }
+.keygate__link {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--persimmon);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.keygate__link:hover { text-decoration: underline; color: var(--persimmon-deep); }

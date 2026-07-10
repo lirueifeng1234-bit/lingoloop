@@ -8,6 +8,7 @@
 import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
 import { READING_MINUTES } from '../lib/reading'
 import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
+import { needsOwnKey } from '../lib/apiKey'
 
 function greeting() {
   const h = new Date().getHours()
@@ -93,6 +94,12 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   const hasReading = !!onStartReading
   const hasWriting = !!onStartWriting
 
+  // Non-owner users must add their own Gemini key before anything will work
+  // (the server refuses to lend them the built-in key). Until they do, every
+  // "start" sends them to Settings instead of into a call that would just fail.
+  const needsKey = needsOwnKey(email)
+  const guard = (fn) => (needsKey ? onOpenSettings : fn)
+
   const speakingDone = !!progress.speaking
   const vocabDone = !!progress.vocab
   const readingDone = !!progress.reading
@@ -115,7 +122,8 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
 
   // Follow the loop: speak, read to collect, write to produce, then review it all.
   let next = null
-  if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
+  if (needsKey) next = { fn: onOpenSettings, label: 'Add your Gemini key to start' }
+  else if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
   else if (hasReading && !readingDone) next = { fn: onStartReading, label: 'Read & collect' }
   else if (hasWriting && !writingDone) next = { fn: onStartWriting, label: 'Write today’s piece' }
   else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
@@ -147,6 +155,18 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             : <>Your path for today is already set, so there’s nothing to decide. Just follow the curve — about {totalMin} minutes.</>}
         </p>
 
+        {needsKey && (
+          <div className="keygate" role="note">
+            <span className="keygate__icon" aria-hidden="true">🔑</span>
+            <div className="keygate__body">
+              <b>One quick setup step.</b> This account needs its own free Google
+              Gemini key before you can practise — it keeps your usage on your own
+              quota. It takes about a minute.
+              <button className="keygate__link" onClick={onOpenSettings}>Open Settings →</button>
+            </div>
+          </div>
+        )}
+
         <div className="arc-card">
           <div className="arc-card__head">
             <span className="arc-card__label">Today's loop</span>
@@ -155,7 +175,12 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           <TodayArc tasks={tasks} />
         </div>
 
-        {next ? (
+        {needsKey ? (
+          <button className="cta" onClick={onOpenSettings}>
+            Add your Gemini key to start
+            <span className="cta__arrow" aria-hidden="true">→</span>
+          </button>
+        ) : next ? (
           <button className="cta" onClick={next.fn}>
             {next.label}
             <span className="cta__time mono">{totalMin} min</span>
@@ -187,7 +212,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             {prompt.focus && <p className="task__focus">Targets: {prompt.focus}</p>}
             <div className="task__foot">
               <span className="task__time">~{SPEAKING_MINUTES} min</span>
-              <button className="task__go" onClick={onStartSpeaking}>
+              <button className="task__go" onClick={guard(onStartSpeaking)}>
                 {speakingDone ? 'Again →' : 'Start →'}
               </button>
             </div>
@@ -209,7 +234,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             </p>
             <div className="task__foot">
               <span className="task__time">~{VOCAB_MINUTES} min</span>
-              <button className="task__go" onClick={onStartVocab}>
+              <button className="task__go" onClick={guard(onStartVocab)}>
                 {vocabDone ? 'Again →' : due > 0 ? 'Start →' : 'Review →'}
               </button>
             </div>
@@ -232,7 +257,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               </p>
               <div className="task__foot">
                 <span className="task__time">~{READING_MINUTES} min</span>
-                <button className="task__go" onClick={onStartReading}>
+                <button className="task__go" onClick={guard(onStartReading)}>
                   {readingDone ? 'Again →' : 'Read →'}
                 </button>
               </div>
@@ -254,7 +279,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               {writingPrompt.focus && <p className="task__focus">Targets: {writingPrompt.focus}</p>}
               <div className="task__foot">
                 <span className="task__time">~{WRITING_MINUTES} min</span>
-                <button className="task__go" onClick={onStartWriting}>
+                <button className="task__go" onClick={guard(onStartWriting)}>
                   {writingDone ? 'Again →' : 'Write →'}
                 </button>
               </div>
