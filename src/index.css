@@ -44,6 +44,13 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; }
+/* Lock the page to the viewport width: this is a single-column app, never a
+   side-scrolling document. Decorative glows (e.g. .shell::before) intentionally
+   bleed past the content edges, so clip the horizontal overflow they create
+   instead of letting it turn into a left/right drag on phones. overflow-x on
+   both html and body stops iOS from rubber-banding sideways. No sticky elements
+   exist, so clipping here is safe. */
+html, body { overflow-x: hidden; max-width: 100%; }
 /* Kill double-tap-to-zoom app-wide; the layout is fixed-width, not a document. */
 html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
 
