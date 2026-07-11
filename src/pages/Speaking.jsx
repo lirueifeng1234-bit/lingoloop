@@ -5,6 +5,7 @@ import { blobToWavBase64 } from '../lib/audio'
 import { pickPrompt } from '../lib/prompts'
 import { logSession } from '../lib/db'
 import { withUserKey } from '../lib/apiKey'
+import { analyzeErrorInfo } from '../lib/edgeError'
 
 function fmt(secs) {
   const m = Math.floor(secs / 60)
@@ -136,11 +137,8 @@ export default function Speaking({ userId, prompt: propPrompt, onExit }) {
       })
 
       if (error || data?.error) {
-        setErrMsg(
-          data?.detail || data?.error
-            ? `Gemini said: ${data.detail || data.error}`
-            : 'The analysis service isn’t reachable right now. Please try again in a moment.',
-        )
+        const { message } = await analyzeErrorInfo(error, data)
+        setErrMsg(message)
         setPhase('error')
         return
       }

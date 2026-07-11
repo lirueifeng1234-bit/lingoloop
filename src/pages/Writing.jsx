@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase'
 import { pickWritingPrompt } from '../lib/writing'
 import { logSession } from '../lib/db'
 import { withUserKey } from '../lib/apiKey'
+import { analyzeErrorInfo } from '../lib/edgeError'
 
 const MIN_WORDS = 25
 
@@ -132,11 +133,8 @@ export default function Writing({ userId, onExit }) {
       })
 
       if (error || data?.error) {
-        setErrMsg(
-          data?.detail || data?.error
-            ? `Gemini said: ${data.detail || data.error}`
-            : 'The analysis service isn’t reachable right now. Please try again in a moment.',
-        )
+        const { message } = await analyzeErrorInfo(error, data)
+        setErrMsg(message)
         setPhase('error')
         return
       }
