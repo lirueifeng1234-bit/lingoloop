@@ -117,6 +117,82 @@ export async function getTalkFuel() {
   return { errors, words }
 }
 
+// Run the AI debrief over a pasted voice-conversation transcript. The heavy
+// analysis happens server-side (debrief-talk edge function → Gemini): voice
+// models write lazy end-of-chat notes, but a strong text model reading the
+// whole transcript produces real coaching. Throws so the UI can fall back
+// to the offline notes parser.
+export async function debriefSession({ transcript, sessionTitle, personaName }) {
+  const { data, error } = await supabase.functions.invoke('debrief-talk', {
+    body: withUserKey({ transcript, sessionTitle, personaName }),
+  })
+  if (error) throw error
+  if (!data || data.error || !Array.isArray(data.upgrades)) {
+    throw new Error(data?.error || 'debrief failed')
+  }
+  return data
+}
+
+// Bank a debrief: every upgrade and new expression becomes a review card
+// (native phrase + the why + usage guidance + a range example), and every
+// upgrade also becomes an errors row — the weak-spots log that tunes
+// tomorrow's session prompt.
+export async function saveDebrief(userId, d) {
+  const seen = new Set()
+  const words = []
+  const addWord = (phrase, definition, example) => {
+    const word = String(phrase || '').toLowerCase().trim()
+    if (!word || seen.has(word)) return
+    seen.add(word)
+    words.push({ user_id: userId, word, definition: definition || null, example: example || null, source: 'talk' })
+  }
+  for (const u of d.upgrades ?? []) {
+    addWord(u.native, [u.why, u.use_when ? `Use it: ${u.use_when}` : null].filter(Boolean).join(' · '), u.example)
+  }
+  for (const x of d.new_expressions ?? []) {
+    addWord(x.phrase, [x.meaning, x.use_when ? `Use it: ${x.use_when}` : null].filter(Boolean).join(' · '), x.example)
+  }
+  if (words.length) {
+    const { error } = await supabase.from('vocabulary').upsert(words, {
+      onConflict: 'user_id,word',
+      ignoreDuplicates: true,
+    })
+    if (error) throw error
+  }
+
+  const errs = []
+  for (const u of d.upgrades ?? []) {
+    if (u.you_said && u.native) {
+      errs.push({
+        user_id: userId,
+        error_type: 'word_choice',
+        original: u.you_said,
+        correction: u.native,
+        note: u.why || u.use_when || null,
+        source_module: 'speaking',
+      })
+    }
+  }
+  for (const p of d.pronunciation ?? []) {
+    if (p.word && p.tip) {
+      errs.push({
+        user_id: userId,
+        error_type: 'pronunciation',
+        original: p.word,
+        correction: p.tip,
+        note: null,
+        source_module: 'speaking',
+      })
+    }
+  }
+  if (errs.length) {
+    const { error } = await supabase.from('errors').insert(errs)
+    if (error) throw error
+  }
+
+  return { words: words.length, corrections: errs.length }
+}
+
 // Bank the parsed session notes: each expression becomes a review card
 // (meaning + usage guidance + context example), and each correction /
 // pronunciation fix becomes an errors row — which feeds straight back into

@@ -71,16 +71,40 @@ export function keepsakeForDay(dayIdx) {
   return KEEPSAKES[i]
 }
 
-// ── Daily photography ────────────────────────────────────────────────────
-// Each day also carries one curated photograph (public/keepsakes/k01..kNN,
-// warm-toned, "the world English opens up"). Stride 5 is co-prime with the
-// photo count, and independent of the phrase stride, so the phrase/photo
-// pairing itself changes daily.
-export const PHOTO_COUNT = 14
+// ── Daily photography — places worth learning English for ────────────────
+// Each day carries one world-class landmark photograph (public/places/*,
+// sourced from Wikimedia Commons — attribution in public/places/CREDITS.json),
+// each labeled with where it was taken. Stride 5 is co-prime with 18, and
+// independent of the phrase stride, so the phrase/photo pairing changes daily.
+export const PLACES = [
+  { file: 'p01.webp', place: 'Positano, Amalfi Coast', country: 'Italy' },
+  { file: 'p02.webp', place: 'Oia, Santorini', country: 'Greece' },
+  { file: 'p03.webp', place: 'Machu Picchu', country: 'Peru' },
+  { file: 'p04.webp', place: 'Kinkaku-ji, Kyoto', country: 'Japan' },
+  { file: 'p05.webp', place: 'Göreme, Cappadocia', country: 'Turkey' },
+  { file: 'p06.webp', place: 'Hạ Long Bay', country: 'Vietnam' },
+  { file: 'p07.webp', place: 'Moraine Lake, Banff', country: 'Canada' },
+  { file: 'p08.webp', place: 'Manarola, Cinque Terre', country: 'Italy' },
+  { file: 'p09.webp', place: 'Antelope Canyon, Arizona', country: 'United States' },
+  { file: 'p10.webp', place: 'The Storr, Isle of Skye', country: 'Scotland' },
+  { file: 'p11.webp', place: 'Salar de Uyuni', country: 'Bolivia' },
+  { file: 'p12.webp', place: 'Al-Khazneh, Petra', country: 'Jordan' },
+  { file: 'p13.webp', place: 'Twelve Apostles, Victoria', country: 'Australia' },
+  { file: 'p14.webp', place: 'Zhangjiajie, Hunan', country: 'China' },
+  { file: 'p15.webp', place: 'Chefchaouen', country: 'Morocco' },
+  { file: 'p16.webp', place: 'Kirkjufell, Snæfellsnes', country: 'Iceland' },
+  { file: 'p17.webp', place: 'Taj Mahal, Agra', country: 'India' },
+  { file: 'p18.webp', place: 'Bagan', country: 'Myanmar' },
+]
+
+export function placeForDay(dayIdx) {
+  const n = ((dayIdx * 5) % PLACES.length + PLACES.length) % PLACES.length
+  const p = PLACES[n]
+  return { ...p, src: `${import.meta.env.BASE_URL}places/${p.file}` }
+}
 
 export function photoForDay(dayIdx) {
-  const n = ((dayIdx * 5) % PHOTO_COUNT + PHOTO_COUNT) % PHOTO_COUNT + 1
-  return `${import.meta.env.BASE_URL}keepsakes/k${String(n).padStart(2, '0')}.webp`
+  return placeForDay(dayIdx).src
 }
 
 // Rank titles — quiet prestige for consistency. Thresholds are total active

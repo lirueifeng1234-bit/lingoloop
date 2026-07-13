@@ -183,13 +183,21 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--ink-faint);
   text-transform: uppercase;
 }
-.arc-card__meta { font-family: var(--font-mono); font-size: var(--step-small); color: var(--ink-soft); }
-.arc-card__meta b { color: var(--ink); font-weight: 600; }
+.arc-card__meta { font-family: var(--font-mono); font-size: 0.95rem; color: var(--ink-soft); }
+.arc-card__meta b { color: var(--ink); font-weight: 600; font-size: 1.1em; }
 
-.arc-svg { display: block; width: 100%; height: auto; }
+.arc-svg { display: block; width: 100%; height: auto; margin-top: 8px; }
 
-.arc-node-label { font-family: var(--font-body); font-size: 13px; font-weight: 600; fill: var(--ink); }
-.arc-node-sub { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-faint); }
+/* Font sizes are in viewBox units (520 wide), so they render generously at
+   every screen width — the loop is the cover's centerpiece, not a footnote. */
+.arc-node-label { font-family: var(--font-body); font-size: 19px; font-weight: 600; fill: var(--ink); }
+.arc-node-sub { font-family: var(--font-mono); font-size: 13.5px; fill: var(--ink-faint); }
+/* Phones render the svg at ~0.53 scale, so grow the type in viewBox units —
+   labels alternate above/below the curve, so the extra width never collides. */
+@media (max-width: 540px) {
+  .arc-node-label { font-size: 25px; }
+  .arc-node-sub { font-size: 17px; }
+}
 
 /* CTA */
 .cta {
@@ -1438,7 +1446,17 @@ button { touch-action: manipulation; }
   color: rgba(255, 253, 248, 0.92);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
-.speak .plate { margin-top: 20px; height: 132px; }
+/* The place label — every photograph says where in the world it is. */
+.plate { justify-content: space-between; gap: 8px; }
+.plate__cap--loc {
+  text-align: right;
+  letter-spacing: 0.1em;
+  color: rgba(255, 250, 240, 0.98);
+  flex-shrink: 0;
+  max-width: 60%;
+}
+.plate--far { margin-top: 34px; height: 168px; }
+.speak .plate { margin-top: 20px; height: 140px; }
 
 /* ---------- Live Session page ---------- */
 .talk__intro { margin-top: 26px; }
@@ -1527,9 +1545,65 @@ button { touch-action: manipulation; }
   padding: 13px 16px;
 }
 .bankx--pron { border-left-color: var(--gold); }
+.bankx--upgrade { border-left-color: var(--persimmon); }
 .bankx__phrase { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; margin: 0; line-height: 1.25; }
 .bankx__meta { margin: 4px 0 0; color: var(--ink-soft); font-size: 0.9rem; line-height: 1.5; }
 .bankx__use { margin: 4px 0 0; color: var(--ink-faint); font-size: 0.85rem; line-height: 1.5; }
+.bankx__said {
+  margin: 0 0 5px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.bankx__said i { text-transform: none; letter-spacing: 0; font-size: 0.85rem; }
+
+/* ---------- The debrief report ---------- */
+.debrief { margin-top: 18px; }
+.debrief__overall {
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--gold) 34%, var(--line));
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.debrief__kicker {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.debrief__section { margin-top: 22px; }
+.debrief__head {
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--persimmon);
+  margin: 0 0 4px;
+}
+.debrief__strength { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.55; font-size: 0.95rem; }
+
+.talk__skip {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.talk__skip:hover { color: var(--ink); }
 
 /* ---------- keepsake cards ---------- */
 .kseal { margin-top: 26px; }
@@ -1551,6 +1625,23 @@ button { touch-action: manipulation; }
   flex: none; height: 168px;
   background-size: cover; background-position: center;
   background-color: var(--card-2);
+  position: relative;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+}
+.kcard__photo::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(22, 19, 12, 0) 55%, rgba(22, 19, 12, 0.5) 100%);
+}
+.kcard__loc {
+  position: relative;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 250, 240, 0.96);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
 }
 .kcard__photo--veiled { filter: blur(10px) saturate(0.65) brightness(0.92); transform: scale(1.12); }
 .kcard__body { padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 8px; }

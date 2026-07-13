@@ -2,10 +2,12 @@
 // ChatGPT/Gemini voice modes sound human but default to either sycophantic
 // small-talk or (over-prompted) hostile drilling. This prompt turns one into
 // a warm native-speaker coach: spontaneous conversation, corrections taught
-// slowly and repeated back, pronunciation and fluency coaching — and it ends
-// by WRITING structured session notes that LingoLoop parses and banks into
-// the review deck. Deterministic template + live data — zero API cost,
-// works with no Gemini key.
+// slowly and repeated back, pronunciation and fluency coaching. The deep
+// analysis does NOT happen in the voice chat (voice models write lazy notes) —
+// the learner pastes the whole transcript back into LingoLoop, where the
+// debrief-talk edge function turns it into a real coaching report.
+// parseNotes() stays as an offline fallback for pastes that contain the old
+// "=== LINGOLOOP NOTES ===" block.
 
 export const SESSION_MINUTES = 12
 
@@ -174,22 +176,10 @@ ${weakSpots || '- (none on file yet — listen for anything that sounds translat
 WORDS I'M LEARNING — work them naturally into your own sentences (don't announce it), and steer so I get chances to use them:
 ${wordList || '- (none on file yet)'}
 
-WRAPPING UP — very important
+WRAPPING UP
 After about ${SESSION_MINUTES} minutes, or when I say "wrap up":
-1. First, out loud: take me back through today's best phrases one at a time, slowly, and have me say each one once more.
-2. Then say "Here are your session notes" and WRITE THEM AS TEXT in exactly this format — my learning app reads it, so keep the labels exactly:
-
-=== LINGOLOOP NOTES ===
-EXPRESSION: the natural phrase, exactly as a native says it
-MEANING: plain-English meaning
-YOU SAID: what I actually said (or "new" if it wasn't a correction)
-USE IT: when and how natives use it — situation, register, any caution
-EXAMPLE: one natural example sentence, ideally from our conversation
----
-(one block per expression, separated by ---, 4–6 blocks in total)
-PRONUNCIATION: word — the fix, with the stress spelled out
-FLUENCY: the one thing to practice before next time
-=== END ===
+1. Out loud, take me back through today's best phrases one at a time — slowly — and have me say each one once more.
+2. Then send me off warmly, in character, in a line or two. No summaries, no notes, no bullet lists — my learning app analyzes our full conversation afterwards, so just end like a person.
 
 Start now: greet me in character — a sentence or two — and get us going.`
 

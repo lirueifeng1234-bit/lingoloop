@@ -66,7 +66,7 @@ export default function App() {
     return <Review userId={userId} onExit={() => { setView('home'); refresh() }} />
   }
   if (view === 'speaking') {
-    return <Speak userId={userId} onExit={() => { setView('home'); refresh() }} />
+    return <Speak userId={userId} email={session?.user?.email} onExit={() => { setView('home'); refresh() }} />
   }
   if (view === 'reading') {
     return <Reading userId={userId} onExit={() => { setView('home'); refresh() }} />

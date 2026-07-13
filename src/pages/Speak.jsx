@@ -1,25 +1,33 @@
 /*
- * Live Session — Speaking and Live Talk, merged into one flow.
- * The conversation itself happens in ChatGPT/Gemini voice mode (the only
- * zero-cost way to get native-speed spontaneous speech), driven by today's
- * coach prompt. The learning comes home: the AI ends by writing structured
- * session notes, which get pasted back here, parsed, and banked — every
- * expression (with meaning, usage guidance, and context) into the review
- * deck, every correction into the weak-spots log that tunes tomorrow's
- * prompt. No key needed anywhere in this flow.
+ * Live Session — the conversation happens in ChatGPT/Gemini voice mode (the
+ * only zero-cost way to get native-speed spontaneous speech), driven by
+ * today's coach prompt. The learning comes home the reliable way: the learner
+ * pastes the WHOLE transcript back here and the debrief-talk edge function
+ * (a strong text model, not the lazy voice model) writes the real coaching
+ * report — every upgrade with the why, the register, and a range example.
+ * Banking sends expressions to the review deck and corrections to the
+ * weak-spots log that tunes tomorrow's prompt. If the AI debrief is
+ * unavailable, the old "=== LINGOLOOP NOTES ===" parser is the fallback.
  */
-import { useEffect, useMemo, useState } from 'react'
-import { getTalkFuel, logSession, saveSessionNotes } from '../lib/db'
+import { useEffect, useState } from 'react'
+import { debriefSession, getTalkFuel, logSession, saveDebrief, saveSessionNotes } from '../lib/db'
 import { buildTalkPrompt, parseNotes, SESSION_MINUTES } from '../lib/talk'
-import { localDayIndex, photoForDay } from '../lib/keepsakes'
+import { localDayIndex, placeForDay } from '../lib/keepsakes'
+import { needsOwnKey } from '../lib/apiKey'
 
-export default function Speak({ userId, onExit }) {
+export default function Speak({ userId, email, onExit }) {
   const [built, setBuilt] = useState(null)
   const [copied, setCopied] = useState(false)
-  const [notesText, setNotesText] = useState('')
+  const [pasteText, setPasteText] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [debrief, setDebrief] = useState(null) // AI debrief result
+  const [fallback, setFallback] = useState(null) // parseNotes() result when AI is unavailable
+  const [statusMsg, setStatusMsg] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null) // { words, corrections } | 'plain'
   const [saveErr, setSaveErr] = useState('')
+
+  const needsKey = needsOwnKey(email)
 
   useEffect(() => {
     let alive = true
@@ -30,9 +38,6 @@ export default function Speak({ userId, onExit }) {
       .catch(() => { if (alive) setBuilt(buildTalkPrompt()) })
     return () => { alive = false }
   }, [])
-
-  const parsed = useMemo(() => parseNotes(notesText), [notesText])
-  const found = parsed.expressions.length
 
   async function copy() {
     if (!built) return
@@ -54,11 +59,46 @@ export default function Speak({ userId, onExit }) {
     }
   }
 
+  async function analyze() {
+    if (!pasteText.trim() || analyzing) return
+    setAnalyzing(true)
+    setStatusMsg('')
+    setDebrief(null)
+    setFallback(null)
+    try {
+      const d = await debriefSession({
+        transcript: pasteText,
+        sessionTitle: built?.seed?.title,
+        personaName: built?.persona?.name,
+      })
+      const found = (d.upgrades?.length ?? 0) + (d.new_expressions?.length ?? 0)
+      if (found === 0) {
+        setStatusMsg(d.overall || 'The coach couldn’t find a conversation in that paste — make sure it includes your side of the chat.')
+      } else {
+        setDebrief(d)
+      }
+    } catch {
+      // AI debrief unreachable (offline, quota, key) — the old notes-block
+      // parser still rescues pastes that contain one.
+      const parsed = parseNotes(pasteText)
+      if (parsed.expressions.length > 0) {
+        setFallback(parsed)
+        setStatusMsg('Couldn’t reach the AI coach, but a notes block was found in your paste — banking from that instead.')
+      } else {
+        setStatusMsg('Couldn’t reach the AI coach — check your connection and try again. You can still log the session below.')
+      }
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
   async function finish() {
     setBusy(true)
     setSaveErr('')
     try {
-      const saved = found ? await saveSessionNotes(userId, parsed) : null
+      let saved = null
+      if (debrief) saved = await saveDebrief(userId, debrief)
+      else if (fallback) saved = await saveSessionNotes(userId, fallback)
       await logSession('speaking', SESSION_MINUTES * 60, userId)
       setDone(saved ?? 'plain')
     } catch {
@@ -72,6 +112,10 @@ export default function Speak({ userId, onExit }) {
   }
 
   const { persona, seed, text } = built
+  const spot = placeForDay(localDayIndex() + 9)
+  const bankCount = debrief
+    ? (debrief.upgrades?.length ?? 0) + (debrief.new_expressions?.length ?? 0)
+    : (fallback?.expressions.length ?? 0)
 
   if (done) {
     const banked = done !== 'plain'
@@ -82,11 +126,11 @@ export default function Speak({ userId, onExit }) {
           <span className="review__progress mono">Live Session</span>
         </div>
         <div className="review__done">
-          <h1>{banked ? 'Session banked.' : 'Session logged.'}</h1>
+          <h1>{banked ? 'Debrief banked.' : 'Session logged.'}</h1>
           <p>
             {banked
-              ? <><b>{done.words}</b> expression{done.words === 1 ? '' : 's'} went into your review deck with full context, and <b>{done.corrections}</b> coaching point{done.corrections === 1 ? '' : 's'} joined your weak spots — tomorrow’s session will listen for them.</>
-              : 'A real conversation is the closest thing to living in the language. Next time, paste the session notes too — they become review cards automatically.'}
+              ? <><b>{done.words}</b> expression{done.words === 1 ? '' : 's'} went into your review deck — each with the why, the register, and an example — and <b>{done.corrections}</b> coaching point{done.corrections === 1 ? '' : 's'} joined your weak spots. Tomorrow’s coach will listen for them.</>
+              : 'A real conversation is the closest thing to living in the language. Next time, paste the transcript too — the debrief turns it into review cards automatically.'}
           </p>
           <button className="cta" onClick={onExit}>Back to today →</button>
         </div>
@@ -101,12 +145,9 @@ export default function Speak({ userId, onExit }) {
         <span className="review__progress mono">Live Session</span>
       </div>
 
-      <div
-        className="plate"
-        style={{ backgroundImage: `url(${photoForDay(localDayIndex() + 9)})` }}
-        aria-hidden="true"
-      >
-        <span className="plate__cap">{seed.kind === 'scene' ? 'Today’s scene' : 'Today’s conversation'} · {seed.title}</span>
+      <div className="plate" style={{ backgroundImage: `url(${spot.src})` }}>
+        <span className="plate__cap">{seed.kind === 'scene' ? 'Today’s scene' : 'Today’s conversation'}</span>
+        <span className="plate__cap plate__cap--loc">✦ {spot.place} — {spot.country}</span>
       </div>
 
       <header className="talk__intro">
@@ -119,8 +160,8 @@ export default function Speak({ userId, onExit }) {
         <li><b>Copy</b> the prompt below.</li>
         <li>Open <a href="https://chatgpt.com" target="_blank" rel="noreferrer">ChatGPT</a> or <a href="https://gemini.google.com" target="_blank" rel="noreferrer">Gemini</a>, start <b>voice mode</b>, and paste it as your first message.</li>
         <li>Talk for ~{SESSION_MINUTES} minutes. Say <b>“wrap up”</b> when you’re ready to end.</li>
-        <li>The coach writes your <b>session notes</b> into the chat — copy them.</li>
-        <li>Paste them below to bank everything into your review deck.</li>
+        <li>Leave voice mode — the conversation is now text on the chat screen. <b>Select it all and copy it.</b></li>
+        <li>Paste it below. Your coach here reads the whole thing and writes the real debrief.</li>
       </ol>
 
       <div className="talk__promptwrap">
@@ -134,24 +175,108 @@ export default function Speak({ userId, onExit }) {
       </div>
 
       <section className="bank">
-        <div className="bank__label">After the conversation — bank your notes</div>
+        <div className="bank__label">After the conversation — get your debrief</div>
         <textarea
           className="bank__paste"
-          value={notesText}
-          onChange={(e) => setNotesText(e.target.value)}
-          placeholder="Paste your session notes here — anything from “=== LINGOLOOP NOTES ===” to “=== END ===”. Pasting the whole chat transcript works too."
+          value={pasteText}
+          onChange={(e) => { setPasteText(e.target.value); setDebrief(null); setFallback(null); setStatusMsg('') }}
+          placeholder="Paste the whole conversation here — everything from the chat screen. Rough copies are fine; your coach sorts it out."
         />
-        {notesText.trim() && (
-          <p className={`bank__status mono ${found ? 'is-found' : 'is-miss'}`}>
-            {found
-              ? <>✓ Found {found} expression{found === 1 ? '' : 's'}{parsed.pronunciation.length > 0 && <> · {parsed.pronunciation.length} pronunciation note{parsed.pronunciation.length === 1 ? '' : 's'}</>}{parsed.fluency.length > 0 && <> · fluency focus</>}</>
-              : 'No notes found in that paste — make sure it includes the block the coach wrote. You can still log the session below.'}
+
+        {needsKey && (
+          <p className="bank__status mono is-miss">
+            The debrief is AI-powered, so this account needs its own free Gemini key — add it in Settings. You can still log the session below.
           </p>
         )}
 
-        {found > 0 && (
+        {statusMsg && <p className={`bank__status mono ${fallback ? 'is-found' : 'is-miss'}`}>{statusMsg}</p>}
+
+        {!debrief && !fallback && (
+          <div className="speak__actions">
+            <button className="talk__skip" onClick={finish} disabled={busy}>
+              Skip — just log the session →
+            </button>
+            <button className="cta" onClick={analyze} disabled={analyzing || !pasteText.trim() || needsKey}>
+              {analyzing ? 'Your coach is reading…' : 'Get my debrief →'}
+            </button>
+          </div>
+        )}
+
+        {debrief && (
+          <div className="debrief">
+            {debrief.overall && (
+              <blockquote className="debrief__overall">
+                <span className="debrief__kicker mono">The one thing</span>
+                {debrief.overall}
+              </blockquote>
+            )}
+
+            {(debrief.strengths?.length ?? 0) > 0 && (
+              <div className="debrief__section">
+                <h2 className="debrief__head mono">What landed</h2>
+                {debrief.strengths.map((s, i) => (
+                  <p className="debrief__strength" key={i}>✓ {s}</p>
+                ))}
+              </div>
+            )}
+
+            {(debrief.upgrades?.length ?? 0) > 0 && (
+              <div className="debrief__section">
+                <h2 className="debrief__head mono">Your upgrades · {debrief.upgrades.length}</h2>
+                <div className="bank__cards">
+                  {debrief.upgrades.map((u, i) => (
+                    <article className="bankx bankx--upgrade" key={i}>
+                      <p className="bankx__said">you said · <i>“{u.you_said}”</i></p>
+                      <h3 className="bankx__phrase">“{u.native}”</h3>
+                      {u.why && <p className="bankx__meta">{u.why}</p>}
+                      {u.use_when && <p className="bankx__use">Use it: {u.use_when}</p>}
+                      {u.example && <p className="bankx__use">— {u.example}</p>}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(debrief.new_expressions?.length ?? 0) > 0 && (
+              <div className="debrief__section">
+                <h2 className="debrief__head mono">Worth stealing</h2>
+                <div className="bank__cards">
+                  {debrief.new_expressions.map((x, i) => (
+                    <article className="bankx" key={i}>
+                      <h3 className="bankx__phrase">“{x.phrase}”</h3>
+                      {x.meaning && <p className="bankx__meta">{x.meaning}</p>}
+                      {x.use_when && <p className="bankx__use">Use it: {x.use_when}</p>}
+                      {x.example && <p className="bankx__use">— {x.example}</p>}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {((debrief.pronunciation?.length ?? 0) > 0 || debrief.fluency) && (
+              <div className="debrief__section">
+                <h2 className="debrief__head mono">Sound &amp; flow</h2>
+                <div className="bank__cards">
+                  {(debrief.pronunciation ?? []).map((p, i) => (
+                    <article className="bankx bankx--pron" key={i}>
+                      <h3 className="bankx__phrase">{p.word}</h3>
+                      <p className="bankx__meta">{p.tip}</p>
+                    </article>
+                  ))}
+                  {debrief.fluency && (
+                    <article className="bankx bankx--pron">
+                      <p className="bankx__meta"><b>Fluency focus:</b> {debrief.fluency}</p>
+                    </article>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {fallback && (
           <div className="bank__cards">
-            {parsed.expressions.map((x, i) => (
+            {fallback.expressions.map((x, i) => (
               <article className="bankx" key={i}>
                 <h3 className="bankx__phrase">“{x.phrase}”</h3>
                 {(x.meaning || x.youSaid) && (
@@ -164,32 +289,23 @@ export default function Speak({ userId, onExit }) {
                 {x.example && <p className="bankx__use">— {x.example}</p>}
               </article>
             ))}
-            {parsed.pronunciation.map((p, i) => (
-              <article className="bankx bankx--pron" key={`p${i}`}>
-                <h3 className="bankx__phrase">{p.word}</h3>
-                <p className="bankx__meta">Pronunciation: {p.tip}</p>
-              </article>
-            ))}
-            {parsed.fluency.map((f, i) => (
-              <article className="bankx bankx--pron" key={`f${i}`}>
-                <p className="bankx__meta">Fluency focus: {f}</p>
-              </article>
-            ))}
           </div>
         )}
 
         {saveErr && <p className="bank__status mono is-miss">{saveErr}</p>}
 
-        <div className="speak__actions">
-          <span />
-          <button className="cta" onClick={finish} disabled={busy}>
-            {found ? `Bank ${found} & finish →` : 'I had the conversation →'}
-          </button>
-        </div>
+        {(debrief || fallback) && (
+          <div className="speak__actions">
+            <span />
+            <button className="cta" onClick={finish} disabled={busy}>
+              {`Bank ${bankCount} & finish →`}
+            </button>
+          </div>
+        )}
       </section>
 
       <p className="note">
-        A new partner and session every day — and every banked expression makes
+        A new partner and session every day — and every banked upgrade makes
         tomorrow’s coach smarter about you.
       </p>
     </div>

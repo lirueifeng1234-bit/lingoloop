@@ -11,7 +11,7 @@ import { READING_MINUTES } from '../lib/reading'
 import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
 import { needsOwnKey } from '../lib/apiKey'
 import { todaysTalk, SESSION_MINUTES } from '../lib/talk'
-import { keepsakeForDay, localDayIndex, photoForDay } from '../lib/keepsakes'
+import { keepsakeForDay, localDayIndex, photoForDay, placeForDay } from '../lib/keepsakes'
 
 function greeting() {
   const h = new Date().getHours()
@@ -24,6 +24,8 @@ function greeting() {
 // The signature memory-retention curve, laid out data-driven so it holds any
 // number of tasks (2–4) plus a terminal "Done" star. Nodes sit on a gentle
 // sine crest; labels alternate below/above so they never crowd the line.
+// The viewBox is deliberately narrow (520 wide) so the whole drawing — nodes,
+// labels, spacing — renders LARGE relative to the card, especially on phones.
 function TodayArc({ tasks }) {
   const allDone = tasks.every((t) => t.done)
   const pts = [
@@ -31,7 +33,7 @@ function TodayArc({ tasks }) {
     { key: 'done', label: 'Done', sub: 'streak +1', done: allDone, color: 'var(--gold)', terminal: true },
   ]
   const n = pts.length
-  const X0 = 64, X1 = 696, BASE = 138, AMP = 52
+  const X0 = 58, X1 = 462, BASE = 152, AMP = 56
   const node = pts.map((p, i) => {
     const t = n === 1 ? 0 : i / (n - 1)
     return { ...p, x: X0 + t * (X1 - X0), y: BASE - AMP * Math.sin(Math.PI * t) }
@@ -39,7 +41,7 @@ function TodayArc({ tasks }) {
   const label = tasks.map((t) => t.label).join(', ')
 
   return (
-    <svg className="arc-svg" viewBox="0 0 760 200" role="img"
+    <svg className="arc-svg" viewBox="0 0 520 244" role="img"
       aria-label={`Today's path: ${label}, Done`}>
       {/* Segments — each lit by the task it leads out of, in that task's colour */}
       {node.slice(0, -1).map((a, i) => {
@@ -47,29 +49,29 @@ function TodayArc({ tasks }) {
         const mx = (a.x + b.x) / 2
         return (
           <path key={`seg-${a.key}`} d={`M ${a.x} ${a.y} C ${mx} ${a.y} ${mx} ${b.y} ${b.x} ${b.y}`}
-            fill="none" stroke={a.color} strokeWidth={a.done ? 3 : 2} strokeLinecap="round"
-            strokeDasharray={a.done ? '0' : '2 8'} opacity={a.done ? 1 : 0.5} />
+            fill="none" stroke={a.color} strokeWidth={a.done ? 3.5 : 2.5} strokeLinecap="round"
+            strokeDasharray={a.done ? '0' : '2 9'} opacity={a.done ? 1 : 0.5} />
         )
       })}
 
       {/* Nodes + alternating labels */}
       {node.map((p, i) => {
         const below = i % 2 === 0
-        const ly = below ? p.y + 30 : p.y - 19
-        const sy = below ? p.y + 46 : p.y - 35
+        const ly = below ? p.y + 36 : p.y - 24
+        const sy = below ? p.y + 56 : p.y - 44
         return (
           <g key={p.key}>
             {p.terminal ? (
               <>
-                <circle cx={p.x} cy={p.y} r="7" fill="var(--card)" stroke="var(--gold)"
-                  strokeWidth="2.5" strokeDasharray={allDone ? '0' : '2 3'} />
-                <path transform={`translate(${p.x - 688} ${p.y - 121.7})`}
+                <circle cx={p.x} cy={p.y} r="9" fill="var(--card)" stroke="var(--gold)"
+                  strokeWidth="3" strokeDasharray={allDone ? '0' : '2 3'} />
+                <path transform={`translate(${p.x} ${p.y}) scale(1.35) translate(-688 -120.9)`}
                   d="M 688 114.5 l 1.9 3.9 4.3 0.6 -3.1 3 0.7 4.3 -3.8 -2 -3.8 2 0.7 -4.3 -3.1 -3 4.3 -0.6 z"
                   fill="var(--gold)" opacity={allDone ? 0.95 : 0.25} />
               </>
             ) : (
-              <circle cx={p.x} cy={p.y} r="7.5" fill={p.done ? p.color : 'var(--card)'}
-                stroke={p.color} strokeWidth="2.5" />
+              <circle cx={p.x} cy={p.y} r="9.5" fill={p.done ? p.color : 'var(--card)'}
+                stroke={p.color} strokeWidth="3" />
             )}
             <text className="arc-node-label" x={p.x} y={ly} textAnchor="middle">{p.label}</text>
             <text className="arc-node-sub" x={p.x} y={sy} textAnchor="middle">
@@ -110,6 +112,10 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
 
   const { persona, seed } = todaysTalk()
   const dayIdx = localDayIndex()
+  // Two distinct daily photographs (offsets keep them apart from each other
+  // and from the keepsake photo, so the unseal reveal stays a surprise).
+  const heroSpot = placeForDay(dayIdx + 3)
+  const farSpot = placeForDay(dayIdx + 6)
 
   // The loop, in order: speak it live → read (collect) → write (produce) →
   // review to lock it in. Built as one list so the arc, counts, next-action,
@@ -174,21 +180,22 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
 
         <div
           className="plate"
-          style={{ backgroundImage: `url(${photoForDay(dayIdx + 3)})` }}
-          aria-hidden="true"
+          style={{ backgroundImage: `url(${heroSpot.src})` }}
         >
           <span className="plate__cap">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </span>
+          <span className="plate__cap plate__cap--loc">✦ {heroSpot.place} — {heroSpot.country}</span>
         </div>
 
         {needsKey && (
           <div className="keygate" role="note">
             <span className="keygate__icon" aria-hidden="true">🔑</span>
             <div className="keygate__body">
-              <b>One quick setup step.</b> Reading and writing are AI-generated, so
-              this account needs its own free Google Gemini key for those two — it
-              takes about a minute. Your live session and review work right away.
+              <b>One quick setup step.</b> Reading, writing, and the session
+              debrief are AI-powered, so this account needs its own free Google
+              Gemini key — it takes about a minute. Your live conversation and
+              review work right away.
               <button className="keygate__link" onClick={onOpenSettings}>Open Settings →</button>
             </div>
           </div>
@@ -231,10 +238,10 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
             </div>
             <h3 className="task__title">{seed.title}</h3>
             <p className="task__desc">
-              {seed.hook} {persona.name} — {persona.who} — hosts, coaches you
-              live, and writes your session notes.
+              {seed.hook} {persona.name} — {persona.who} — hosts and coaches you
+              live. Paste the transcript after, and your debrief banks itself.
             </p>
-            <p className="task__focus">Voice mode · ChatGPT or Gemini · notes flow into Review</p>
+            <p className="task__focus">Voice mode · ChatGPT or Gemini · debrief flows into Review</p>
             <div className="task__foot">
               <span className="task__time">~{SESSION_MINUTES} min</span>
               <button className="task__go" onClick={onStartSpeaking}>
@@ -342,6 +349,13 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
           )}
         </div>
 
+        {/* A second window on the world between the tasks and the week —
+            different place, same daily rotation, labeled like a print. */}
+        <div className="plate plate--far" style={{ backgroundImage: `url(${farSpot.src})` }}>
+          <span className="plate__cap">The world English opens up</span>
+          <span className="plate__cap plate__cap--loc">✦ {farSpot.place} — {farSpot.country}</span>
+        </div>
+
         <div className="week">
           <span className="week__label">This week</span>
           <div className="week__dots">
@@ -358,7 +372,7 @@ export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab,
           <button className="progress-link" onClick={onOpenProgress}>See your full progress →</button>
         )}
 
-        <p className="note">Your session notes and saved words flow into review · finish all four to unseal today's keepsake</p>
+        <p className="note">Your debrief and saved words flow into review · finish all four to unseal today's keepsake</p>
         {email && (
           <p className="note note--auth">
             {email}

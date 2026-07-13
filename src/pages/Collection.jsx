@@ -6,17 +6,20 @@
  */
 import { useEffect, useState } from 'react'
 import { getActiveDays, getTodayProgress } from '../lib/db'
-import { keepsakeForDay, localDayIndex, photoForDay, rankFor } from '../lib/keepsakes'
+import { keepsakeForDay, localDayIndex, placeForDay, photoForDay, rankFor } from '../lib/keepsakes'
 
 const fmtDay = (d) =>
   d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-// Each card opens on its day's photograph — the daily-changing luxury moment —
-// with the expression set on ivory below, like a plate in a fine print series.
+// Each card opens on its day's photograph — a real place, labeled like a
+// print in a series — with the expression set on ivory below.
 function KeepsakeCard({ k, idx, date, isToday }) {
+  const spot = placeForDay(idx)
   return (
     <article className={`kcard${isToday ? ' kcard--today' : ''}`}>
-      <div className="kcard__photo" style={{ backgroundImage: `url(${photoForDay(idx)})` }} aria-hidden="true" />
+      <div className="kcard__photo" style={{ backgroundImage: `url(${spot.src})` }}>
+        <span className="kcard__loc">✦ {spot.place} — {spot.country}</span>
+      </div>
       <div className="kcard__body">
         <div className="kcard__date mono">{isToday ? 'Today' : fmtDay(date)}</div>
         <h3 className="kcard__phrase">“{k.phrase}”</h3>

@@ -39,6 +39,7 @@ npm run build    # 產出 dist/
 - [x] **階段 6** — 聽說讀寫四技能 + 進度儀表板 + PWA
 - [x] **階段 7** — 每日回訪層:Live Talk(ChatGPT/Gemini 語音模式客製 prompt)+ Keepsake 每日收藏(完成循環解封當日慣用語卡 + 每日輪替精品攝影)
 - [x] **階段 8** — 口說大合併:Speaking + Live Talk → Live Session(教練式語音對話 prompt:溫暖不吹捧、糾正時放慢並重複、發音/流暢度指導)+ session notes 貼回自動入庫(表達 → 複習卡含語境/用法、糾正 → 弱點檔案回饋明日 prompt);循環改為四任務;首頁/會話頁每日攝影 Plate
+- [x] **階段 9** — AI Debrief:語音模式筆記太薄 → 改貼整段 transcript,新 Edge Function `debrief-talk`(Gemini 文字模型)產出完整教練報告(you said → native + why + use when + example、strengths、發音、流暢度焦點),一鍵入庫;攝影全面換成 18 張世界景點(Wikimedia Commons,含地點標籤,public/places/ + CREDITS.json),首頁雙 Plate、收藏卡標地點;首頁進度弧線放大(viewBox 縮窄 + 手機字級加大)
 
 ## 資料表(規劃)
 
