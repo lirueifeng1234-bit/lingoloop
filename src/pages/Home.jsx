@@ -108,28 +108,34 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   const vocabDone = !!progress.vocab
   const readingDone = !!progress.reading
   const writingDone = !!progress.writing
+  const talkDone = !!progress.talk
+  const hasTalk = !!onStartTalk
 
-  // The loop, in order: speak → read (collect) → write (produce) → review.
-  // Built as one list so the arc, counts, and next-action all stay in sync.
+  // The loop, in order: speak → read (collect) → write (produce) → talk
+  // (use it live) → review to lock it in. Built as one list so the arc,
+  // counts, next-action, and keepsake unseal all stay in sync.
   const tasks = [
     { key: 'speaking', label: 'Speak', sub: `${SPEAKING_MINUTES} min`, done: speakingDone, color: 'var(--persimmon)' },
   ]
   if (hasReading) tasks.push({ key: 'reading', label: 'Read', sub: `${READING_MINUTES} min`, done: readingDone, color: 'var(--gold)' })
   if (hasWriting) tasks.push({ key: 'writing', label: 'Write', sub: `${WRITING_MINUTES} min`, done: writingDone, color: 'var(--teal)' })
-  tasks.push({ key: 'vocab', label: 'Review', sub: `${due} due`, done: vocabDone, color: 'var(--persimmon-deep)' })
+  if (hasTalk) tasks.push({ key: 'talk', label: 'Talk', sub: `${TALK_MINUTES} min`, done: talkDone, color: 'var(--persimmon-deep)' })
+  tasks.push({ key: 'vocab', label: 'Review', sub: `${due} due`, done: vocabDone, color: 'var(--teal)' })
 
   const totalTasks = tasks.length
   const doneCount = tasks.filter((t) => t.done).length
   const allDone = doneCount === totalTasks
   const totalMin =
-    SPEAKING_MINUTES + (hasReading ? READING_MINUTES : 0) + (hasWriting ? WRITING_MINUTES : 0) + VOCAB_MINUTES
+    SPEAKING_MINUTES + (hasReading ? READING_MINUTES : 0) + (hasWriting ? WRITING_MINUTES : 0) +
+    (hasTalk ? TALK_MINUTES : 0) + VOCAB_MINUTES
 
-  // Follow the loop: speak, read to collect, write to produce, then review it all.
+  // Follow the loop: speak, read, write, talk it out live, then review it all.
   let next = null
   if (needsKey) next = { fn: onOpenSettings, label: 'Add your Gemini key to start' }
   else if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
   else if (hasReading && !readingDone) next = { fn: onStartReading, label: 'Read & collect' }
   else if (hasWriting && !writingDone) next = { fn: onStartWriting, label: 'Write today’s piece' }
+  else if (hasTalk && !talkDone) next = { fn: onStartTalk, label: 'Have your live talk' }
   else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
 
   return (
@@ -207,7 +213,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
       <section className="tasks">
         <div className="tasks__head">
           <h2>Today's tasks</h2>
-          <span>Speaking first · the rest fills in</span>
+          <span>Speak first · review last</span>
         </div>
 
         <div className="task-grid">
@@ -277,6 +283,34 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             </article>
           )}
 
+          {/* Live Talk — no key needed, so it's never routed to Settings */}
+          {onStartTalk && (() => {
+            const { persona, seed } = todaysTalk()
+            return (
+              <article className={`task task--talk${talkDone ? ' is-done' : ''}`}>
+                <div className="task__top">
+                  <span className="task__badge">
+                    <span className="task__icon" aria-hidden="true">💬</span>
+                    Live Talk
+                  </span>
+                  <span className="task__count">{talkDone ? '✓ done' : <><b>1</b> partner</>}</span>
+                </div>
+                <h3 className="task__title">{seed.topic}</h3>
+                <p className="task__desc">
+                  {persona.name}, {persona.who} — a voice-mode prompt tuned to your
+                  weak spots. No yes-man small talk.
+                </p>
+                <p className="task__focus">Voice mode · ChatGPT or Gemini</p>
+                <div className="task__foot">
+                  <span className="task__time">~{TALK_MINUTES} min</span>
+                  <button className="task__go" onClick={onStartTalk}>
+                    {talkDone ? 'Again →' : 'Talk →'}
+                  </button>
+                </div>
+              </article>
+            )
+          })()}
+
           {/* Vocab — the loop closes with review, so its card comes last */}
           <article className={`task task--vocab${vocabDone ? ' is-done' : ''}`}>
             <div className="task__top">
@@ -298,58 +332,37 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               </button>
             </div>
           </article>
-        </div>
 
-        {/* After the core loop: tonight's live conversation and today's
-            keepsake — the two reasons to come back beyond the tasks. */}
-        {(onStartTalk || onOpenCollection) && (
-          <div className="bonus">
-            {onStartTalk && (() => {
-              const { persona, seed } = todaysTalk()
-              const talkDone = !!progress.talk
-              return (
-                <article className={`bonus__card bonus__card--talk${talkDone ? ' is-done' : ''}`}>
-                  <span className="bonus__eyebrow">Live Talk · real conversation</span>
-                  <h3 className="bonus__title">
-                    {talkDone ? `You talked with ${persona.name} today` : `${persona.name} is ready to argue`}
-                  </h3>
-                  <p className="bonus__desc">
-                    {talkDone
-                      ? 'Logged — it counts toward your streak. A new partner arrives tomorrow.'
-                      : <>Tonight’s topic: <b>{seed.topic}</b>. Get a voice-mode prompt tuned to your weak spots — no yes-man small talk.</>}
-                  </p>
-                  <div className="task__foot">
-                    <span className="task__time">~{TALK_MINUTES} min · ChatGPT or Gemini voice</span>
-                    <button className="task__go" onClick={onStartTalk}>{talkDone ? 'Again →' : 'Prep my talk →'}</button>
-                  </div>
-                </article>
-              )
-            })()}
-            {onOpenCollection && (
-              <article
-                className={`bonus__card bonus__card--keepsake${allDone ? ' is-open' : ''}`}
-                style={allDone ? { backgroundImage: `url(${photoForDay(localDayIndex())})` } : undefined}
-              >
-                <span className="bonus__eyebrow">Today’s keepsake</span>
-                {allDone ? (
-                  <>
-                    <h3 className="bonus__title">“{keepsakeForDay(localDayIndex()).phrase}”</h3>
-                    <p className="bonus__desc">Unsealed — today’s expression and photograph are yours for good.</p>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="bonus__title">✦ Sealed</h3>
-                    <p className="bonus__desc">Finish today’s loop to unseal a native expression. Miss the day, and the card is gone forever.</p>
-                  </>
-                )}
-                <div className="task__foot">
-                  <span className="task__time">one per day</span>
-                  <button className="task__go" onClick={onOpenCollection}>Collection →</button>
-                </div>
-              </article>
-            )}
-          </div>
-        )}
+          {/* Keepsake — not a task, but it lives in the same grid with the
+              same anatomy: gold accent, and the day's photograph once the
+              whole loop is done. */}
+          {onOpenCollection && (
+            <article
+              className={`task task--keepsake${allDone ? ' is-open' : ''}`}
+              style={allDone ? { backgroundImage: `url(${photoForDay(localDayIndex())})` } : undefined}
+            >
+              <div className="task__top">
+                <span className="task__badge">
+                  <span className="task__icon" aria-hidden="true">✦</span>
+                  Keepsake
+                </span>
+                <span className="task__count">{allDone ? '✓ unsealed' : 'sealed'}</span>
+              </div>
+              <h3 className="task__title">
+                {allDone ? <>“{keepsakeForDay(localDayIndex()).phrase}”</> : 'A native expression, sealed'}
+              </h3>
+              <p className="task__desc">
+                {allDone
+                  ? 'Yours for good — today’s phrase and photograph are in your collection.'
+                  : 'Finish all five loop tasks to unseal today’s expression and the photograph behind it.'}
+              </p>
+              <div className="task__foot">
+                <span className="task__time">one per day</span>
+                <button className="task__go" onClick={onOpenCollection}>Collection →</button>
+              </div>
+            </article>
+          )}
+        </div>
 
         <div className="week">
           <span className="week__label">This week</span>
@@ -367,7 +380,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           <button className="progress-link" onClick={onOpenProgress}>See your full progress →</button>
         )}
 
-        <p className="note">Speaking, reading, writing, vocab &amp; streak are live · your errors and saved words flow into review</p>
+        <p className="note">Your errors and saved words flow into review · finish all five to unseal today's keepsake</p>
         {email && (
           <p className="note note--auth">
             {email}

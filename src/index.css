@@ -1379,53 +1379,32 @@ button { touch-action: manipulation; }
    Live Talk + Keepsake collection — the daily-return layer
    ============================================================ */
 
-/* ---------- home bonus row ---------- */
-.bonus { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.bonus__card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 22px;
-  box-shadow: var(--shadow-card);
-  display: flex; flex-direction: column; gap: 10px;
-  border-top: 3px solid var(--accent, var(--line));
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
-}
-.bonus__card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
-.bonus__card--talk { --accent: var(--persimmon); }
-.bonus__card--talk.is-done { opacity: 0.72; }
-.bonus__card--keepsake { --accent: var(--gold); background: var(--card-2); }
+/* ---------- Live Talk + Keepsake cards (same anatomy as the other tasks) ---------- */
+.task--talk { --accent: var(--persimmon-deep); }
+.task--keepsake { --accent: var(--gold); background: var(--card-2); }
 /* Unsealed: the card becomes today's photograph — inline style supplies the
    image, this rule supplies the treatment. A dark scrim keeps text legible. */
-.bonus__card--keepsake.is-open {
-  position: relative; overflow: hidden;
+.task--keepsake.is-open {
+  overflow: hidden;
   background-size: cover; background-position: center;
   background-color: var(--card);
   border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  position: relative;
 }
-.bonus__card--keepsake.is-open::before {
+.task--keepsake.is-open::before {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(22, 19, 12, 0.16) 0%, rgba(22, 19, 12, 0.66) 100%);
+  background: linear-gradient(180deg, rgba(22, 19, 12, 0.18) 0%, rgba(22, 19, 12, 0.68) 100%);
 }
-.bonus__card--keepsake.is-open > * { position: relative; }
-.bonus__card--keepsake.is-open .bonus__eyebrow { color: #e9d9ae; }
-.bonus__card--keepsake.is-open .bonus__title { color: #fffdf8; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.4); }
-.bonus__card--keepsake.is-open .bonus__desc { color: rgba(255, 253, 248, 0.88); }
-.bonus__card--keepsake.is-open .task__time { color: rgba(255, 253, 248, 0.78); }
-.bonus__card--keepsake.is-open .task__go { border-color: rgba(255, 253, 248, 0.85); color: #fffdf8; }
-.bonus__card--keepsake.is-open .task__go:hover { background: #fffdf8; color: var(--ink); }
-.bonus__eyebrow {
-  font-family: var(--font-mono); font-size: var(--step-small);
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--accent);
-}
-.bonus__title { font-family: var(--font-display); font-size: 1.28rem; font-weight: 600; margin: 0; }
-.bonus__desc { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; margin: 0; }
-.bonus__card .task__foot { margin-top: auto; padding-top: 8px; }
-
-@media (max-width: 640px) {
-  .bonus { grid-template-columns: 1fr; }
-}
+.task--keepsake.is-open > * { position: relative; }
+.task--keepsake.is-open .task__badge { color: #e9d9ae; }
+.task--keepsake.is-open .task__icon { background: rgba(233, 217, 174, 0.18); }
+.task--keepsake.is-open .task__count { color: rgba(255, 253, 248, 0.82); }
+.task--keepsake.is-open .task__title { color: #fffdf8; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.4); }
+.task--keepsake.is-open .task__desc { color: rgba(255, 253, 248, 0.88); }
+.task--keepsake.is-open .task__time { color: rgba(255, 253, 248, 0.78); }
+.task--keepsake.is-open .task__go { border-color: rgba(255, 253, 248, 0.85); color: #fffdf8; }
+.task--keepsake.is-open .task__go:hover,
+.task--keepsake.is-open .task__go:active { background: #fffdf8; color: var(--ink); }
 
 /* ---------- Live Talk page ---------- */
 .talk__intro { margin-top: 26px; }

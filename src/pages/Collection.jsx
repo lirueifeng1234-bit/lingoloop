@@ -56,7 +56,7 @@ export default function Collection({ onExit }) {
 
   const { days, progress } = state
   const todayIdx = localDayIndex()
-  const core = ['speaking', 'reading', 'writing', 'vocab']
+  const core = ['speaking', 'reading', 'writing', 'talk', 'vocab']
   const loopDone = core.every((k) => progress[k])
   const todayKeepsake = keepsakeForDay(todayIdx)
 
