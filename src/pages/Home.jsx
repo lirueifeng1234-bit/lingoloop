@@ -11,7 +11,7 @@ import { READING_MINUTES } from '../lib/reading'
 import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
 import { needsOwnKey } from '../lib/apiKey'
 import { todaysTalk, TALK_MINUTES } from '../lib/talk'
-import { keepsakeForDay, localDayIndex } from '../lib/keepsakes'
+import { keepsakeForDay, localDayIndex, photoForDay } from '../lib/keepsakes'
 
 function greeting() {
   const h = new Date().getHours()
@@ -231,28 +231,6 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             </div>
           </article>
 
-          {/* Vocab */}
-          <article className={`task task--vocab${vocabDone ? ' is-done' : ''}`}>
-            <div className="task__top">
-              <span className="task__badge">
-                <span className="task__icon" aria-hidden="true">🗂️</span>
-                Review
-              </span>
-              <span className="task__count">{vocabDone ? '✓ done' : <><b>{due}</b> due</>}</span>
-            </div>
-            <h3 className="task__title">Spaced review</h3>
-            <p className="task__desc">
-              Words from your speaking feedback and reading. Scheduled with FSRS — only
-              what's due today.
-            </p>
-            <div className="task__foot">
-              <span className="task__time">~{VOCAB_MINUTES} min</span>
-              <button className="task__go" onClick={guard(onStartVocab)}>
-                {vocabDone ? 'Again →' : due > 0 ? 'Start →' : 'Review →'}
-              </button>
-            </div>
-          </article>
-
           {/* Reading */}
           {onStartReading && (
             <article className={`task task--reading${readingDone ? ' is-done' : ''}`}>
@@ -298,6 +276,28 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               </div>
             </article>
           )}
+
+          {/* Vocab — the loop closes with review, so its card comes last */}
+          <article className={`task task--vocab${vocabDone ? ' is-done' : ''}`}>
+            <div className="task__top">
+              <span className="task__badge">
+                <span className="task__icon" aria-hidden="true">🗂️</span>
+                Review
+              </span>
+              <span className="task__count">{vocabDone ? '✓ done' : <><b>{due}</b> due</>}</span>
+            </div>
+            <h3 className="task__title">Spaced review</h3>
+            <p className="task__desc">
+              Words from your speaking feedback and reading. Scheduled with FSRS — only
+              what's due today.
+            </p>
+            <div className="task__foot">
+              <span className="task__time">~{VOCAB_MINUTES} min</span>
+              <button className="task__go" onClick={guard(onStartVocab)}>
+                {vocabDone ? 'Again →' : due > 0 ? 'Start →' : 'Review →'}
+              </button>
+            </div>
+          </article>
         </div>
 
         {/* After the core loop: tonight's live conversation and today's
@@ -326,12 +326,15 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
               )
             })()}
             {onOpenCollection && (
-              <article className={`bonus__card bonus__card--keepsake${allDone ? ' is-open' : ''}`}>
+              <article
+                className={`bonus__card bonus__card--keepsake${allDone ? ' is-open' : ''}`}
+                style={allDone ? { backgroundImage: `url(${photoForDay(localDayIndex())})` } : undefined}
+              >
                 <span className="bonus__eyebrow">Today’s keepsake</span>
                 {allDone ? (
                   <>
                     <h3 className="bonus__title">“{keepsakeForDay(localDayIndex()).phrase}”</h3>
-                    <p className="bonus__desc">Unsealed — today’s native expression is yours for good.</p>
+                    <p className="bonus__desc">Unsealed — today’s expression and photograph are yours for good.</p>
                   </>
                 ) : (
                   <>

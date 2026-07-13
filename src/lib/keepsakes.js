@@ -71,6 +71,18 @@ export function keepsakeForDay(dayIdx) {
   return KEEPSAKES[i]
 }
 
+// ── Daily photography ────────────────────────────────────────────────────
+// Each day also carries one curated photograph (public/keepsakes/k01..kNN,
+// warm-toned, "the world English opens up"). Stride 5 is co-prime with the
+// photo count, and independent of the phrase stride, so the phrase/photo
+// pairing itself changes daily.
+export const PHOTO_COUNT = 14
+
+export function photoForDay(dayIdx) {
+  const n = ((dayIdx * 5) % PHOTO_COUNT + PHOTO_COUNT) % PHOTO_COUNT + 1
+  return `${import.meta.env.BASE_URL}keepsakes/k${String(n).padStart(2, '0')}.webp`
+}
+
 // Rank titles — quiet prestige for consistency. Thresholds are total active
 // (practice) days, not streak, so a broken streak never demotes anyone.
 const RANKS = [

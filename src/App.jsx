@@ -26,8 +26,10 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     if (!userId) return
+    // Starter deck is best-effort: a hiccup here must never block the stats
+    // below, or the home numbers freeze on whatever they showed last.
+    try { await ensureStarterDeck(userId) } catch (e) { console.error('[LingoLoop] starter deck check failed', e) }
     try {
-      await ensureStarterDeck(userId)
       const [dueCount, streak, progress, week] = await Promise.all([
         getDueCount(),
         getStreak(),
@@ -42,8 +44,28 @@ export default function App() {
 
   useEffect(() => { refresh() }, [refresh])
 
+  // As an installed PWA the app resumes from memory rather than reloading, so
+  // nothing above would re-run — home could show yesterday's numbers all day.
+  // Re-fetch stats whenever the app comes back to the foreground, and roll the
+  // day key so a new day also re-resolves the daily prompt.
+  const [dayKey, setDayKey] = useState(() => new Date().toDateString())
+  useEffect(() => {
+    const onWake = () => {
+      if (document.visibilityState !== 'visible') return
+      refresh()
+      setDayKey(new Date().toDateString())
+    }
+    document.addEventListener('visibilitychange', onWake)
+    window.addEventListener('focus', onWake)
+    return () => {
+      document.removeEventListener('visibilitychange', onWake)
+      window.removeEventListener('focus', onWake)
+    }
+  }, [refresh])
+
   // Resolve today's prompt once (cached in DB for the day), separate from stats
-  // so a slow Gemini call never holds up the rest of the home screen.
+  // so a slow Gemini call never holds up the rest of the home screen. Re-runs
+  // when dayKey rolls over so a resumed PWA gets a fresh prompt each morning.
   useEffect(() => {
     if (!userId) return
     let alive = true
@@ -51,7 +73,7 @@ export default function App() {
       .then((p) => { if (alive) setPrompt(p) })
       .catch((e) => console.error('[LingoLoop] failed to load prompt', e))
     return () => { alive = false }
-  }, [userId])
+  }, [userId, dayKey])
 
   if (session === undefined) return <div className="boot">Loading…</div>
   if (session === null) return <Login />

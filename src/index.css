@@ -1395,11 +1395,25 @@ button { touch-action: manipulation; }
 .bonus__card--talk { --accent: var(--persimmon); }
 .bonus__card--talk.is-done { opacity: 0.72; }
 .bonus__card--keepsake { --accent: var(--gold); background: var(--card-2); }
+/* Unsealed: the card becomes today's photograph — inline style supplies the
+   image, this rule supplies the treatment. A dark scrim keeps text legible. */
 .bonus__card--keepsake.is-open {
-  background:
-    radial-gradient(120% 90% at 50% -20%, color-mix(in srgb, var(--gold) 14%, transparent) 0%, transparent 62%),
-    var(--card);
+  position: relative; overflow: hidden;
+  background-size: cover; background-position: center;
+  background-color: var(--card);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
 }
+.bonus__card--keepsake.is-open::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(22, 19, 12, 0.16) 0%, rgba(22, 19, 12, 0.66) 100%);
+}
+.bonus__card--keepsake.is-open > * { position: relative; }
+.bonus__card--keepsake.is-open .bonus__eyebrow { color: #e9d9ae; }
+.bonus__card--keepsake.is-open .bonus__title { color: #fffdf8; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.4); }
+.bonus__card--keepsake.is-open .bonus__desc { color: rgba(255, 253, 248, 0.88); }
+.bonus__card--keepsake.is-open .task__time { color: rgba(255, 253, 248, 0.78); }
+.bonus__card--keepsake.is-open .task__go { border-color: rgba(255, 253, 248, 0.85); color: #fffdf8; }
+.bonus__card--keepsake.is-open .task__go:hover { background: #fffdf8; color: var(--ink); }
 .bonus__eyebrow {
   font-family: var(--font-mono); font-size: var(--step-small);
   letter-spacing: 0.06em; text-transform: uppercase;
@@ -1475,17 +1489,20 @@ button { touch-action: manipulation; }
   background: var(--card);
   border: 1px solid color-mix(in srgb, var(--gold) 34%, var(--line));
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 0;
   box-shadow: var(--shadow-card);
-  display: flex; flex-direction: column; gap: 8px;
-  position: relative;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
 }
-.kcard--today {
-  background:
-    radial-gradient(130% 100% at 50% -30%, color-mix(in srgb, var(--gold) 16%, transparent) 0%, transparent 60%),
-    var(--card);
-  box-shadow: var(--shadow-lift);
+.kcard__photo {
+  flex: none; height: 168px;
+  background-size: cover; background-position: center;
+  background-color: var(--card-2);
 }
+.kcard__photo--veiled { filter: blur(10px) saturate(0.65) brightness(0.92); transform: scale(1.12); }
+.kcard__body { padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 8px; }
+.kcard--today { box-shadow: var(--shadow-lift); }
+.kcard--today .kcard__photo { height: 230px; }
 .kcard__date { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
 .kcard__phrase { font-family: var(--font-display); font-size: 1.45rem; font-weight: 600; margin: 0; line-height: 1.2; }
 .kcard__meaning { margin: 0; color: var(--ink-soft); line-height: 1.5; }
@@ -1493,12 +1510,12 @@ button { touch-action: manipulation; }
 .kcard__example::before { content: '— '; }
 
 .kcard--sealed {
-  align-items: center; text-align: center; gap: 12px;
-  padding: 34px 24px;
   background: var(--card-2);
   border-style: dashed;
   --accent: var(--gold);
 }
+.kcard--sealed .kcard__photo--veiled { height: 140px; }
+.kcard__body--sealed { align-items: center; text-align: center; gap: 12px; padding: 26px 24px 30px; }
 .kcard__lock { font-size: 1.6rem; color: var(--gold); opacity: 0.8; }
 .kcard__sealedtext { margin: 0; color: var(--ink-soft); max-width: 34ch; line-height: 1.55; }
 

@@ -32,10 +32,12 @@ npm run build    # 產出 dist/
 ## 進度
 
 - [x] **階段 1** — Scaffold + 今日任務首頁(殼,資料為示意)
-- [ ] **階段 2** — Supabase 接線 + Auth + 單字 SRS 端到端
-- [ ] **階段 3** — Edge Function 代理(AI 供應商解耦)
-- [ ] **階段 4** — 口說模組(Web Speech → AI 分析 → 錯誤/生字回寫)
-- [ ] **階段 5** — 串起每日循環(streak、自動排程、完成回饋)
+- [x] **階段 2** — Supabase 接線 + Auth + 單字 SRS 端到端
+- [x] **階段 3** — Edge Function 代理(AI 供應商解耦)
+- [x] **階段 4** — 口說模組(錄音 → AI 分析 → 錯誤/生字回寫)
+- [x] **階段 5** — 串起每日循環(streak、自動排程、完成回饋)
+- [x] **階段 6** — 聽說讀寫四技能 + 進度儀表板 + PWA
+- [x] **階段 7** — 每日回訪層:Live Talk(ChatGPT/Gemini 語音模式客製 prompt)+ Keepsake 每日收藏(完成循環解封當日慣用語卡 + 每日輪替精品攝影)
 
 ## 資料表(規劃)
 
