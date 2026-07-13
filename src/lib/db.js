@@ -90,7 +90,47 @@ export async function getTodayProgress() {
     vocab: kinds.has('vocab'),
     reading: kinds.has('reading'),
     writing: kinds.has('writing'),
+    talk: kinds.has('talk'),
   }
+}
+
+// ── Live Talk ────────────────────────────────────────────────────────────
+// The data the daily conversation prompt is personalized with: recent
+// mistakes to listen for, and words worth recycling (due first, then newest).
+export async function getTalkFuel() {
+  const [errors, dueRes, recentRes] = await Promise.all([
+    getRecentErrors(8),
+    supabase.from('vocabulary').select('word, definition').lte('due', nowISO())
+      .order('due', { ascending: true }).limit(8),
+    supabase.from('vocabulary').select('word, definition')
+      .order('created_at', { ascending: false }).limit(8),
+  ])
+  if (dueRes.error) throw dueRes.error
+  if (recentRes.error) throw recentRes.error
+  const seen = new Set()
+  const words = []
+  for (const w of [...(dueRes.data ?? []), ...(recentRes.data ?? [])]) {
+    if (words.length >= 8 || seen.has(w.word)) continue
+    seen.add(w.word)
+    words.push(w)
+  }
+  return { errors, words }
+}
+
+// ── Keepsake collection ──────────────────────────────────────────────────
+// Every distinct local day with any practice, oldest first, as Date objects
+// pinned to local midnight. The collection page derives all unlocks from this.
+export async function getActiveDays() {
+  const { data, error } = await supabase
+    .from('practice_sessions')
+    .select('created_at')
+  if (error) throw error
+  const keys = new Set((data ?? []).map((r) => {
+    const d = new Date(r.created_at)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime()
+  }))
+  return [...keys].sort((a, b) => a - b).map((t) => new Date(t))
 }
 
 // This calendar week's activity (Mon–Sun): which days had any practice.

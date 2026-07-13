@@ -1374,3 +1374,149 @@ button { touch-action: manipulation; }
   padding-top: max(24px, env(safe-area-inset-top));
   padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
 }
+
+/* ============================================================
+   Live Talk + Keepsake collection — the daily-return layer
+   ============================================================ */
+
+/* ---------- home bonus row ---------- */
+.bonus { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.bonus__card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+  display: flex; flex-direction: column; gap: 10px;
+  border-top: 3px solid var(--accent, var(--line));
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.bonus__card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+.bonus__card--talk { --accent: var(--persimmon); }
+.bonus__card--talk.is-done { opacity: 0.72; }
+.bonus__card--keepsake { --accent: var(--gold); background: var(--card-2); }
+.bonus__card--keepsake.is-open {
+  background:
+    radial-gradient(120% 90% at 50% -20%, color-mix(in srgb, var(--gold) 14%, transparent) 0%, transparent 62%),
+    var(--card);
+}
+.bonus__eyebrow {
+  font-family: var(--font-mono); font-size: var(--step-small);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent);
+}
+.bonus__title { font-family: var(--font-display); font-size: 1.28rem; font-weight: 600; margin: 0; }
+.bonus__desc { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; margin: 0; }
+.bonus__card .task__foot { margin-top: auto; padding-top: 8px; }
+
+@media (max-width: 640px) {
+  .bonus { grid-template-columns: 1fr; }
+}
+
+/* ---------- Live Talk page ---------- */
+.talk__intro { margin-top: 26px; }
+.talk__title { font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 600; margin-top: 10px; line-height: 1.15; }
+.talk__topic { margin: 12px 0 0; color: var(--ink-soft); line-height: 1.55; }
+.talk__topic b { color: var(--ink); }
+
+.talk__steps {
+  margin: 22px 0 0; padding: 18px 22px 18px 40px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column; gap: 8px;
+  color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5;
+}
+.talk__steps b { color: var(--ink); }
+.talk__steps a { color: var(--persimmon); font-weight: 600; text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--persimmon) 40%, transparent); }
+
+.talk__promptwrap {
+  margin-top: 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.talk__prompthead {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card-2);
+}
+.talk__copy {
+  border: 1px solid var(--persimmon);
+  color: var(--persimmon);
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 0.88rem; font-weight: 600;
+  transition: background 0.16s ease, color 0.16s ease;
+  flex: none;
+}
+.talk__copy:hover { background: var(--persimmon); color: var(--card); }
+.talk__copy.is-copied { background: var(--teal); border-color: var(--teal); color: var(--card); }
+.talk__prompt {
+  margin: 0; padding: 20px 22px;
+  max-height: 340px; overflow-y: auto;
+  font-family: var(--font-body); font-size: 0.92rem; line-height: 1.6;
+  color: var(--ink-soft);
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* ---------- keepsake cards ---------- */
+.kseal { margin-top: 26px; }
+.kseal__label {
+  font-family: var(--font-mono); font-size: var(--step-small);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 12px;
+}
+.kcard {
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--gold) 34%, var(--line));
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  display: flex; flex-direction: column; gap: 8px;
+  position: relative;
+}
+.kcard--today {
+  background:
+    radial-gradient(130% 100% at 50% -30%, color-mix(in srgb, var(--gold) 16%, transparent) 0%, transparent 60%),
+    var(--card);
+  box-shadow: var(--shadow-lift);
+}
+.kcard__date { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.kcard__phrase { font-family: var(--font-display); font-size: 1.45rem; font-weight: 600; margin: 0; line-height: 1.2; }
+.kcard__meaning { margin: 0; color: var(--ink-soft); line-height: 1.5; }
+.kcard__example { margin: 6px 0 0; color: var(--ink-faint); font-style: italic; line-height: 1.5; font-size: 0.95rem; }
+.kcard__example::before { content: '— '; }
+
+.kcard--sealed {
+  align-items: center; text-align: center; gap: 12px;
+  padding: 34px 24px;
+  background: var(--card-2);
+  border-style: dashed;
+  --accent: var(--gold);
+}
+.kcard__lock { font-size: 1.6rem; color: var(--gold); opacity: 0.8; }
+.kcard__sealedtext { margin: 0; color: var(--ink-soft); max-width: 34ch; line-height: 1.55; }
+
+/* ---------- collection page ---------- */
+.col__rank {
+  margin-top: 18px;
+  display: inline-flex; align-items: baseline; gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  box-shadow: var(--shadow-card);
+}
+.col__rank-title { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; color: var(--gold); }
+.col__rank-sub { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); }
+
+.col__past { margin-top: 30px; }
+.col__grid { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) {
+  .col__grid { grid-template-columns: 1fr; }
+}

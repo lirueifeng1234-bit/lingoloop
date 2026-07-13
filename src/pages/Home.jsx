@@ -10,6 +10,8 @@ import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
 import { READING_MINUTES } from '../lib/reading'
 import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
 import { needsOwnKey } from '../lib/apiKey'
+import { todaysTalk, TALK_MINUTES } from '../lib/talk'
+import { keepsakeForDay, localDayIndex } from '../lib/keepsakes'
 
 function greeting() {
   const h = new Date().getHours()
@@ -85,7 +87,7 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onOpenProgress, onOpenSettings, onSignOut }) {
+export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onStartTalk, onOpenCollection, onOpenProgress, onOpenSettings, onSignOut }) {
   const prompt = propPrompt ?? pickPrompt()
   const writingPrompt = pickWritingPrompt()
   const streak = stats.streak ?? 0
@@ -297,6 +299,54 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             </article>
           )}
         </div>
+
+        {/* After the core loop: tonight's live conversation and today's
+            keepsake — the two reasons to come back beyond the tasks. */}
+        {(onStartTalk || onOpenCollection) && (
+          <div className="bonus">
+            {onStartTalk && (() => {
+              const { persona, seed } = todaysTalk()
+              const talkDone = !!progress.talk
+              return (
+                <article className={`bonus__card bonus__card--talk${talkDone ? ' is-done' : ''}`}>
+                  <span className="bonus__eyebrow">Live Talk · real conversation</span>
+                  <h3 className="bonus__title">
+                    {talkDone ? `You talked with ${persona.name} today` : `${persona.name} is ready to argue`}
+                  </h3>
+                  <p className="bonus__desc">
+                    {talkDone
+                      ? 'Logged — it counts toward your streak. A new partner arrives tomorrow.'
+                      : <>Tonight’s topic: <b>{seed.topic}</b>. Get a voice-mode prompt tuned to your weak spots — no yes-man small talk.</>}
+                  </p>
+                  <div className="task__foot">
+                    <span className="task__time">~{TALK_MINUTES} min · ChatGPT or Gemini voice</span>
+                    <button className="task__go" onClick={onStartTalk}>{talkDone ? 'Again →' : 'Prep my talk →'}</button>
+                  </div>
+                </article>
+              )
+            })()}
+            {onOpenCollection && (
+              <article className={`bonus__card bonus__card--keepsake${allDone ? ' is-open' : ''}`}>
+                <span className="bonus__eyebrow">Today’s keepsake</span>
+                {allDone ? (
+                  <>
+                    <h3 className="bonus__title">“{keepsakeForDay(localDayIndex()).phrase}”</h3>
+                    <p className="bonus__desc">Unsealed — today’s native expression is yours for good.</p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="bonus__title">✦ Sealed</h3>
+                    <p className="bonus__desc">Finish today’s loop to unseal a native expression. Miss the day, and the card is gone forever.</p>
+                  </>
+                )}
+                <div className="task__foot">
+                  <span className="task__time">one per day</span>
+                  <button className="task__go" onClick={onOpenCollection}>Collection →</button>
+                </div>
+              </article>
+            )}
+          </div>
+        )}
 
         <div className="week">
           <span className="week__label">This week</span>

@@ -11,6 +11,8 @@ import Reading from './pages/Reading.jsx'
 import Writing from './pages/Writing.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Settings from './pages/Settings.jsx'
+import Talk from './pages/Talk.jsx'
+import Collection from './pages/Collection.jsx'
 import { clearUserKey } from './lib/apiKey'
 
 export default function App() {
@@ -69,6 +71,12 @@ export default function App() {
   if (view === 'dashboard') {
     return <Dashboard onExit={() => { setView('home'); refresh() }} />
   }
+  if (view === 'talk') {
+    return <Talk userId={userId} onExit={() => { setView('home'); refresh() }} />
+  }
+  if (view === 'collection') {
+    return <Collection onExit={() => { setView('home'); refresh() }} />
+  }
   if (view === 'settings') {
     return <Settings email={session.user?.email} onExit={() => { setView('home'); refresh() }} />
   }
@@ -82,6 +90,8 @@ export default function App() {
       onStartVocab={() => setView('review')}
       onStartReading={() => setView('reading')}
       onStartWriting={() => setView('writing')}
+      onStartTalk={() => setView('talk')}
+      onOpenCollection={() => setView('collection')}
       onOpenProgress={() => setView('dashboard')}
       onOpenSettings={() => setView('settings')}
       onSignOut={() => { clearUserKey(); supabase.auth.signOut() }}
