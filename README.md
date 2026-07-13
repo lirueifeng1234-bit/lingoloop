@@ -38,6 +38,7 @@ npm run build    # 產出 dist/
 - [x] **階段 5** — 串起每日循環(streak、自動排程、完成回饋)
 - [x] **階段 6** — 聽說讀寫四技能 + 進度儀表板 + PWA
 - [x] **階段 7** — 每日回訪層:Live Talk(ChatGPT/Gemini 語音模式客製 prompt)+ Keepsake 每日收藏(完成循環解封當日慣用語卡 + 每日輪替精品攝影)
+- [x] **階段 8** — 口說大合併:Speaking + Live Talk → Live Session(教練式語音對話 prompt:溫暖不吹捧、糾正時放慢並重複、發音/流暢度指導)+ session notes 貼回自動入庫(表達 → 複習卡含語境/用法、糾正 → 弱點檔案回饋明日 prompt);循環改為四任務;首頁/會話頁每日攝影 Plate
 
 ## 資料表(規劃)
 

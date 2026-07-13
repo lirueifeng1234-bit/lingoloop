@@ -2,16 +2,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSession } from './hooks/useSession'
 import { useLivingGradient } from './hooks/useLivingGradient'
 import { supabase } from './lib/supabase'
-import { ensureStarterDeck, getDueCount, getStreak, getTodayProgress, getWeekActivity, resolveTodayPrompt } from './lib/db'
+import { ensureStarterDeck, getDueCount, getStreak, getTodayProgress, getWeekActivity } from './lib/db'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Review from './pages/Review.jsx'
-import Speaking from './pages/Speaking.jsx'
+import Speak from './pages/Speak.jsx'
 import Reading from './pages/Reading.jsx'
 import Writing from './pages/Writing.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Settings from './pages/Settings.jsx'
-import Talk from './pages/Talk.jsx'
 import Collection from './pages/Collection.jsx'
 import { clearUserKey } from './lib/apiKey'
 
@@ -20,7 +19,6 @@ export default function App() {
   const session = useSession()
   const [view, setView] = useState('home') // 'home' | 'review'
   const [stats, setStats] = useState({ dueCount: null, streak: null, progress: null, week: null })
-  const [prompt, setPrompt] = useState(null) // today's speaking prompt (dynamic)
 
   const userId = session?.user?.id
 
@@ -46,14 +44,12 @@ export default function App() {
 
   // As an installed PWA the app resumes from memory rather than reloading, so
   // nothing above would re-run — home could show yesterday's numbers all day.
-  // Re-fetch stats whenever the app comes back to the foreground, and roll the
-  // day key so a new day also re-resolves the daily prompt.
-  const [dayKey, setDayKey] = useState(() => new Date().toDateString())
+  // Re-fetch stats whenever the app comes back to the foreground; the refresh
+  // re-renders Home, which re-derives today's session/keepsake from the date.
   useEffect(() => {
     const onWake = () => {
       if (document.visibilityState !== 'visible') return
       refresh()
-      setDayKey(new Date().toDateString())
     }
     document.addEventListener('visibilitychange', onWake)
     window.addEventListener('focus', onWake)
@@ -63,18 +59,6 @@ export default function App() {
     }
   }, [refresh])
 
-  // Resolve today's prompt once (cached in DB for the day), separate from stats
-  // so a slow Gemini call never holds up the rest of the home screen. Re-runs
-  // when dayKey rolls over so a resumed PWA gets a fresh prompt each morning.
-  useEffect(() => {
-    if (!userId) return
-    let alive = true
-    resolveTodayPrompt(userId)
-      .then((p) => { if (alive) setPrompt(p) })
-      .catch((e) => console.error('[LingoLoop] failed to load prompt', e))
-    return () => { alive = false }
-  }, [userId, dayKey])
-
   if (session === undefined) return <div className="boot">Loading…</div>
   if (session === null) return <Login />
 
@@ -82,7 +66,7 @@ export default function App() {
     return <Review userId={userId} onExit={() => { setView('home'); refresh() }} />
   }
   if (view === 'speaking') {
-    return <Speaking userId={userId} prompt={prompt} onExit={() => { setView('home'); refresh() }} />
+    return <Speak userId={userId} onExit={() => { setView('home'); refresh() }} />
   }
   if (view === 'reading') {
     return <Reading userId={userId} onExit={() => { setView('home'); refresh() }} />
@@ -92,9 +76,6 @@ export default function App() {
   }
   if (view === 'dashboard') {
     return <Dashboard onExit={() => { setView('home'); refresh() }} />
-  }
-  if (view === 'talk') {
-    return <Talk userId={userId} onExit={() => { setView('home'); refresh() }} />
   }
   if (view === 'collection') {
     return <Collection onExit={() => { setView('home'); refresh() }} />
@@ -106,13 +87,11 @@ export default function App() {
   return (
     <Home
       stats={stats}
-      prompt={prompt}
       email={session.user?.email}
       onStartSpeaking={() => setView('speaking')}
       onStartVocab={() => setView('review')}
       onStartReading={() => setView('reading')}
       onStartWriting={() => setView('writing')}
-      onStartTalk={() => setView('talk')}
       onOpenCollection={() => setView('collection')}
       onOpenProgress={() => setView('dashboard')}
       onOpenSettings={() => setView('settings')}

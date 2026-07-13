@@ -86,11 +86,11 @@ export async function getTodayProgress() {
   if (error) throw error
   const kinds = new Set((data ?? []).map((r) => r.skill_type))
   return {
-    speaking: kinds.has('speaking'),
+    // 'talk' rows are legacy pre-merge sessions — they were speaking practice too.
+    speaking: kinds.has('speaking') || kinds.has('talk'),
     vocab: kinds.has('vocab'),
     reading: kinds.has('reading'),
     writing: kinds.has('writing'),
-    talk: kinds.has('talk'),
   }
 }
 
@@ -115,6 +115,65 @@ export async function getTalkFuel() {
     words.push(w)
   }
   return { errors, words }
+}
+
+// Bank the parsed session notes: each expression becomes a review card
+// (meaning + usage guidance + context example), and each correction /
+// pronunciation fix becomes an errors row — which feeds straight back into
+// tomorrow's session prompt as a known weak spot. `notes` is the output of
+// parseNotes() in lib/talk.js.
+export async function saveSessionNotes(userId, notes) {
+  const expressions = notes?.expressions ?? []
+
+  const words = expressions
+    .filter((x) => x.phrase)
+    .map((x) => ({
+      user_id: userId,
+      word: x.phrase.toLowerCase().trim(),
+      definition: [x.meaning, x.useIt ? `Use it: ${x.useIt}` : null].filter(Boolean).join(' · ') || null,
+      example: x.example || null,
+      source: 'talk',
+    }))
+  if (words.length) {
+    const { error } = await supabase.from('vocabulary').upsert(words, {
+      onConflict: 'user_id,word',
+      ignoreDuplicates: true,
+    })
+    if (error) throw error
+  }
+
+  const errs = []
+  for (const x of expressions) {
+    const said = (x.youSaid || '').trim()
+    if (said && !/^new$/i.test(said.replace(/[."”]/g, ''))) {
+      errs.push({
+        user_id: userId,
+        error_type: 'word_choice',
+        original: said,
+        correction: x.phrase,
+        note: x.useIt || x.meaning || null,
+        source_module: 'speaking',
+      })
+    }
+  }
+  for (const p of notes?.pronunciation ?? []) {
+    if (p.word && p.tip) {
+      errs.push({
+        user_id: userId,
+        error_type: 'pronunciation',
+        original: p.word,
+        correction: p.tip,
+        note: null,
+        source_module: 'speaking',
+      })
+    }
+  }
+  if (errs.length) {
+    const { error } = await supabase.from('errors').insert(errs)
+    if (error) throw error
+  }
+
+  return { words: words.length, corrections: errs.length }
 }
 
 // ── Keepsake collection ──────────────────────────────────────────────────

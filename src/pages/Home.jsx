@@ -6,11 +6,11 @@
  * Signature element: TodayArc — a memory-retention curve with today's tasks on it.
  */
 import { useCountUp } from '../hooks/useCountUp'
-import { pickPrompt, SPEAKING_MINUTES, VOCAB_MINUTES } from '../lib/prompts'
+import { VOCAB_MINUTES } from '../lib/prompts'
 import { READING_MINUTES } from '../lib/reading'
 import { pickWritingPrompt, WRITING_MINUTES } from '../lib/writing'
 import { needsOwnKey } from '../lib/apiKey'
-import { todaysTalk, TALK_MINUTES } from '../lib/talk'
+import { todaysTalk, SESSION_MINUTES } from '../lib/talk'
 import { keepsakeForDay, localDayIndex, photoForDay } from '../lib/keepsakes'
 
 function greeting() {
@@ -87,8 +87,7 @@ const FALLBACK_WEEK = [
   { day: 'F' }, { day: 'S' }, { day: 'S' },
 ]
 
-export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onStartTalk, onOpenCollection, onOpenProgress, onOpenSettings, onSignOut }) {
-  const prompt = propPrompt ?? pickPrompt()
+export default function Home({ stats = {}, email, onStartSpeaking, onStartVocab, onStartReading, onStartWriting, onOpenCollection, onOpenProgress, onOpenSettings, onSignOut }) {
   const writingPrompt = pickWritingPrompt()
   const streak = stats.streak ?? 0
   const streakShown = useCountUp(streak, 700)
@@ -98,9 +97,9 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   const hasReading = !!onStartReading
   const hasWriting = !!onStartWriting
 
-  // Non-owner users must add their own Gemini key before anything will work
-  // (the server refuses to lend them the built-in key). Until they do, every
-  // "start" sends them to Settings instead of into a call that would just fail.
+  // Reading and writing are AI-generated, so non-owner accounts need their own
+  // free Gemini key for those two. The live session and review never touch
+  // Gemini — they work for everyone, key or not.
   const needsKey = needsOwnKey(email)
   const guard = (fn) => (needsKey ? onOpenSettings : fn)
 
@@ -108,34 +107,33 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
   const vocabDone = !!progress.vocab
   const readingDone = !!progress.reading
   const writingDone = !!progress.writing
-  const talkDone = !!progress.talk
-  const hasTalk = !!onStartTalk
 
-  // The loop, in order: speak → read (collect) → write (produce) → talk
-  // (use it live) → review to lock it in. Built as one list so the arc,
-  // counts, next-action, and keepsake unseal all stay in sync.
+  const { persona, seed } = todaysTalk()
+  const dayIdx = localDayIndex()
+
+  // The loop, in order: speak it live → read (collect) → write (produce) →
+  // review to lock it in. Built as one list so the arc, counts, next-action,
+  // and keepsake unseal all stay in sync.
   const tasks = [
-    { key: 'speaking', label: 'Speak', sub: `${SPEAKING_MINUTES} min`, done: speakingDone, color: 'var(--persimmon)' },
+    { key: 'speaking', label: 'Speak', sub: `${SESSION_MINUTES} min`, done: speakingDone, color: 'var(--persimmon)' },
   ]
   if (hasReading) tasks.push({ key: 'reading', label: 'Read', sub: `${READING_MINUTES} min`, done: readingDone, color: 'var(--gold)' })
   if (hasWriting) tasks.push({ key: 'writing', label: 'Write', sub: `${WRITING_MINUTES} min`, done: writingDone, color: 'var(--teal)' })
-  if (hasTalk) tasks.push({ key: 'talk', label: 'Talk', sub: `${TALK_MINUTES} min`, done: talkDone, color: 'var(--persimmon-deep)' })
   tasks.push({ key: 'vocab', label: 'Review', sub: `${due} due`, done: vocabDone, color: 'var(--teal)' })
 
   const totalTasks = tasks.length
   const doneCount = tasks.filter((t) => t.done).length
   const allDone = doneCount === totalTasks
   const totalMin =
-    SPEAKING_MINUTES + (hasReading ? READING_MINUTES : 0) + (hasWriting ? WRITING_MINUTES : 0) +
-    (hasTalk ? TALK_MINUTES : 0) + VOCAB_MINUTES
+    SESSION_MINUTES + (hasReading ? READING_MINUTES : 0) + (hasWriting ? WRITING_MINUTES : 0) +
+    VOCAB_MINUTES
 
-  // Follow the loop: speak, read, write, talk it out live, then review it all.
+  // Follow the loop: speak it live, read, write, then review it all. Only the
+  // reading/writing steps are gated on a Gemini key.
   let next = null
-  if (needsKey) next = { fn: onOpenSettings, label: 'Add your Gemini key to start' }
-  else if (!speakingDone) next = { fn: onStartSpeaking, label: "Start today's session" }
-  else if (hasReading && !readingDone) next = { fn: onStartReading, label: 'Read & collect' }
-  else if (hasWriting && !writingDone) next = { fn: onStartWriting, label: 'Write today’s piece' }
-  else if (hasTalk && !talkDone) next = { fn: onStartTalk, label: 'Have your live talk' }
+  if (!speakingDone) next = { fn: onStartSpeaking, label: 'Start today’s conversation' }
+  else if (hasReading && !readingDone) next = { fn: guard(onStartReading), label: 'Read & collect' }
+  else if (hasWriting && !writingDone) next = { fn: guard(onStartWriting), label: 'Write today’s piece' }
   else if (!vocabDone) next = { fn: onStartVocab, label: due > 0 ? 'Review your words' : 'Quick review' }
 
   return (
@@ -174,13 +172,23 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             : <>Your path for today is already set, so there’s nothing to decide. Just follow the curve — about {totalMin} minutes.</>}
         </p>
 
+        <div
+          className="plate"
+          style={{ backgroundImage: `url(${photoForDay(dayIdx + 3)})` }}
+          aria-hidden="true"
+        >
+          <span className="plate__cap">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </span>
+        </div>
+
         {needsKey && (
           <div className="keygate" role="note">
             <span className="keygate__icon" aria-hidden="true">🔑</span>
             <div className="keygate__body">
-              <b>One quick setup step.</b> This account needs its own free Google
-              Gemini key before you can practise — it keeps your usage on your own
-              quota. It takes about a minute.
+              <b>One quick setup step.</b> Reading and writing are AI-generated, so
+              this account needs its own free Google Gemini key for those two — it
+              takes about a minute. Your live session and review work right away.
               <button className="keygate__link" onClick={onOpenSettings}>Open Settings →</button>
             </div>
           </div>
@@ -194,12 +202,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           <TodayArc tasks={tasks} />
         </div>
 
-        {needsKey ? (
-          <button className="cta" onClick={onOpenSettings}>
-            Add your Gemini key to start
-            <span className="cta__arrow" aria-hidden="true">→</span>
-          </button>
-        ) : next ? (
+        {next ? (
           <button className="cta" onClick={next.fn}>
             {next.label}
             <span className="cta__time mono">{totalMin} min</span>
@@ -217,21 +220,24 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
         </div>
 
         <div className="task-grid">
-          {/* Speaking */}
+          {/* Live session — speaking, merged with the old Live Talk. No key needed. */}
           <article className={`task task--speaking${speakingDone ? ' is-done' : ''}`}>
             <div className="task__top">
               <span className="task__badge">
                 <span className="task__icon" aria-hidden="true">🎙️</span>
-                Speaking
+                Live Session
               </span>
-              <span className="task__count">{speakingDone ? '✓ done' : <><b>1</b> prompt</>}</span>
+              <span className="task__count">{speakingDone ? '✓ done' : <><b>1</b> partner</>}</span>
             </div>
-            <h3 className="task__title">{prompt.scenario}</h3>
-            <p className="task__desc">{prompt.text}</p>
-            {prompt.focus && <p className="task__focus">Targets: {prompt.focus}</p>}
+            <h3 className="task__title">{seed.title}</h3>
+            <p className="task__desc">
+              {seed.hook} {persona.name} — {persona.who} — hosts, coaches you
+              live, and writes your session notes.
+            </p>
+            <p className="task__focus">Voice mode · ChatGPT or Gemini · notes flow into Review</p>
             <div className="task__foot">
-              <span className="task__time">~{SPEAKING_MINUTES} min</span>
-              <button className="task__go" onClick={guard(onStartSpeaking)}>
+              <span className="task__time">~{SESSION_MINUTES} min</span>
+              <button className="task__go" onClick={onStartSpeaking}>
                 {speakingDone ? 'Again →' : 'Start →'}
               </button>
             </div>
@@ -283,34 +289,6 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             </article>
           )}
 
-          {/* Live Talk — no key needed, so it's never routed to Settings */}
-          {onStartTalk && (() => {
-            const { persona, seed } = todaysTalk()
-            return (
-              <article className={`task task--talk${talkDone ? ' is-done' : ''}`}>
-                <div className="task__top">
-                  <span className="task__badge">
-                    <span className="task__icon" aria-hidden="true">💬</span>
-                    Live Talk
-                  </span>
-                  <span className="task__count">{talkDone ? '✓ done' : <><b>1</b> partner</>}</span>
-                </div>
-                <h3 className="task__title">{seed.topic}</h3>
-                <p className="task__desc">
-                  {persona.name}, {persona.who} — a voice-mode prompt tuned to your
-                  weak spots. No yes-man small talk.
-                </p>
-                <p className="task__focus">Voice mode · ChatGPT or Gemini</p>
-                <div className="task__foot">
-                  <span className="task__time">~{TALK_MINUTES} min</span>
-                  <button className="task__go" onClick={onStartTalk}>
-                    {talkDone ? 'Again →' : 'Talk →'}
-                  </button>
-                </div>
-              </article>
-            )
-          })()}
-
           {/* Vocab — the loop closes with review, so its card comes last */}
           <article className={`task task--vocab${vocabDone ? ' is-done' : ''}`}>
             <div className="task__top">
@@ -322,12 +300,12 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
             </div>
             <h3 className="task__title">Spaced review</h3>
             <p className="task__desc">
-              Words from your speaking feedback and reading. Scheduled with FSRS — only
-              what's due today.
+              Expressions banked from your live sessions and reading — with the
+              context they came from. Scheduled with FSRS: only what's due today.
             </p>
             <div className="task__foot">
               <span className="task__time">~{VOCAB_MINUTES} min</span>
-              <button className="task__go" onClick={guard(onStartVocab)}>
+              <button className="task__go" onClick={onStartVocab}>
                 {vocabDone ? 'Again →' : due > 0 ? 'Start →' : 'Review →'}
               </button>
             </div>
@@ -339,7 +317,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           {onOpenCollection && (
             <article
               className={`task task--keepsake${allDone ? ' is-open' : ''}`}
-              style={allDone ? { backgroundImage: `url(${photoForDay(localDayIndex())})` } : undefined}
+              style={allDone ? { backgroundImage: `url(${photoForDay(dayIdx)})` } : undefined}
             >
               <div className="task__top">
                 <span className="task__badge">
@@ -349,12 +327,12 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
                 <span className="task__count">{allDone ? '✓ unsealed' : 'sealed'}</span>
               </div>
               <h3 className="task__title">
-                {allDone ? <>“{keepsakeForDay(localDayIndex()).phrase}”</> : 'A native expression, sealed'}
+                {allDone ? <>“{keepsakeForDay(dayIdx).phrase}”</> : 'A native expression, sealed'}
               </h3>
               <p className="task__desc">
                 {allDone
                   ? 'Yours for good — today’s phrase and photograph are in your collection.'
-                  : 'Finish all five loop tasks to unseal today’s expression and the photograph behind it.'}
+                  : 'Finish all four loop tasks to unseal today’s expression and the photograph behind it.'}
               </p>
               <div className="task__foot">
                 <span className="task__time">one per day</span>
@@ -380,7 +358,7 @@ export default function Home({ stats = {}, prompt: propPrompt, email, onStartSpe
           <button className="progress-link" onClick={onOpenProgress}>See your full progress →</button>
         )}
 
-        <p className="note">Your errors and saved words flow into review · finish all five to unseal today's keepsake</p>
+        <p className="note">Your session notes and saved words flow into review · finish all four to unseal today's keepsake</p>
         {email && (
           <p className="note note--auth">
             {email}
