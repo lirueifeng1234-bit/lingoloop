@@ -1489,6 +1489,11 @@ button { touch-action: manipulation; }
   border-bottom: 1px solid var(--line);
   background: var(--card-2);
 }
+/* Prompt 2 is the after-the-conversation transcript step — teal-accented so
+   it reads as a distinct, later action from prompt 1. */
+.talk__promptwrap--transcript { margin-top: 14px; border-left: 3px solid var(--teal); }
+.talk__promptwrap--transcript .talk__copy { border-color: var(--teal); color: var(--teal); }
+.talk__promptwrap--transcript .talk__copy:hover { background: var(--teal); color: var(--card); }
 .talk__copy {
   border: 1px solid var(--persimmon);
   color: var(--persimmon);

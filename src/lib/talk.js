@@ -186,6 +186,26 @@ Start now: greet me in character — a sentence or two — and get us going.`
   return { persona, seed, text }
 }
 
+// The learner sends THIS as their final text message, after leaving voice mode.
+// Voice-mode chat screens often show only a partial, paraphrased, or missing
+// transcript — so we ask the model to reprint the whole conversation verbatim.
+// The load-bearing rule is "keep my mistakes exactly": if the model tidies up
+// the learner's errors, debrief-talk has nothing real left to analyze.
+export function buildTranscriptPrompt() {
+  const text = `We're done talking. Drop the coaching completely now — this last job is purely mechanical.
+
+Print the FULL transcript of the entire conversation we just had, from your very first greeting to your last goodbye, word for word.
+
+Rules:
+- Include EVERY turn from both of us, in order. Start each line with "Me:" for what I said and "You:" for what you said.
+- Reproduce my words EXACTLY as I actually said them — keep every grammar slip, wrong word, filler ("um", "like"), and false start. Do NOT fix, polish, rephrase, translate, or improve my English in any way. Those mistakes are the entire point.
+- No summary, no notes, no feedback, no commentary, no headings — just the raw back-and-forth.
+- Plain text only. Nothing before the transcript, nothing after it.
+
+Give me the whole thing, starting from the first line.`
+  return { text }
+}
+
 // ── Session-notes parser ────────────────────────────────────────────────────
 // Reads the block the AI writes at the end. Voice models are sloppy with
 // formats, so this is deliberately forgiving: labels are case-insensitive,

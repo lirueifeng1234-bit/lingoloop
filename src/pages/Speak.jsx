@@ -11,13 +11,13 @@
  */
 import { useEffect, useState } from 'react'
 import { debriefSession, getTalkFuel, logSession, saveDebrief, saveSessionNotes } from '../lib/db'
-import { buildTalkPrompt, parseNotes, SESSION_MINUTES } from '../lib/talk'
+import { buildTalkPrompt, buildTranscriptPrompt, parseNotes, SESSION_MINUTES } from '../lib/talk'
 import { localDayIndex, placeForDay } from '../lib/keepsakes'
 import { needsOwnKey } from '../lib/apiKey'
 
 export default function Speak({ userId, email, onExit }) {
   const [built, setBuilt] = useState(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState('') // '' | 'prompt' | 'transcript'
   const [pasteText, setPasteText] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [debrief, setDebrief] = useState(null) // AI debrief result
@@ -39,16 +39,15 @@ export default function Speak({ userId, email, onExit }) {
     return () => { alive = false }
   }, [])
 
-  async function copy() {
-    if (!built) return
+  async function copy(which, textToCopy, elId) {
     try {
-      await navigator.clipboard.writeText(built.text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2200)
+      await navigator.clipboard.writeText(textToCopy)
+      setCopied(which)
+      setTimeout(() => setCopied((c) => (c === which ? '' : c)), 2200)
     } catch {
       // Clipboard API can be blocked (older iOS in-app views): fall back to
       // selecting the text so a long-press copy works.
-      const el = document.getElementById('talk-prompt-text')
+      const el = document.getElementById(elId)
       if (el) {
         const range = document.createRange()
         range.selectNodeContents(el)
@@ -112,6 +111,7 @@ export default function Speak({ userId, email, onExit }) {
   }
 
   const { persona, seed, text } = built
+  const transcriptText = buildTranscriptPrompt().text
   const spot = placeForDay(localDayIndex() + 9)
   const bankCount = debrief
     ? (debrief.upgrades?.length ?? 0) + (debrief.new_expressions?.length ?? 0)
@@ -157,21 +157,31 @@ export default function Speak({ userId, email, onExit }) {
       </header>
 
       <ol className="talk__steps">
-        <li><b>Copy</b> the prompt below.</li>
+        <li><b>Copy prompt 1</b> below.</li>
         <li>Open <a href="https://chatgpt.com" target="_blank" rel="noreferrer">ChatGPT</a> or <a href="https://gemini.google.com" target="_blank" rel="noreferrer">Gemini</a>, start <b>voice mode</b>, and paste it as your first message.</li>
         <li>Talk for ~{SESSION_MINUTES} minutes. Say <b>“wrap up”</b> when you’re ready to end.</li>
-        <li>Leave voice mode — the conversation is now text on the chat screen. <b>Select it all and copy it.</b></li>
-        <li>Paste it below. Your coach here reads the whole thing and writes the real debrief.</li>
+        <li>Leave voice mode. Back in the text box, <b>paste prompt 2</b> — it makes the AI print your whole conversation word for word.</li>
+        <li>Copy the transcript it prints, and <b>paste it below</b>. Your coach here reads it and writes the real debrief.</li>
       </ol>
 
       <div className="talk__promptwrap">
         <div className="talk__prompthead">
-          <span className="arc-card__label">Today’s prompt · tuned to your weak spots</span>
-          <button className={`talk__copy${copied ? ' is-copied' : ''}`} onClick={copy}>
-            {copied ? '✓ Copied' : 'Copy prompt'}
+          <span className="arc-card__label">Prompt 1 · start the session · tuned to your weak spots</span>
+          <button className={`talk__copy${copied === 'prompt' ? ' is-copied' : ''}`} onClick={() => copy('prompt', text, 'talk-prompt-text')}>
+            {copied === 'prompt' ? '✓ Copied' : 'Copy prompt'}
           </button>
         </div>
         <pre id="talk-prompt-text" className="talk__prompt">{text}</pre>
+      </div>
+
+      <div className="talk__promptwrap talk__promptwrap--transcript">
+        <div className="talk__prompthead">
+          <span className="arc-card__label">Prompt 2 · after you finish · get the transcript</span>
+          <button className={`talk__copy${copied === 'transcript' ? ' is-copied' : ''}`} onClick={() => copy('transcript', transcriptText, 'talk-transcript-text')}>
+            {copied === 'transcript' ? '✓ Copied' : 'Copy prompt'}
+          </button>
+        </div>
+        <pre id="talk-transcript-text" className="talk__prompt">{transcriptText}</pre>
       </div>
 
       <section className="bank">
